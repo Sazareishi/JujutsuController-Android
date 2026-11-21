@@ -13,13 +13,17 @@ enum class AuthType {
     SSH_KEY
 }
 
+class RepositoryAlreadyExistsException(val targetPath: String) :
+    IllegalStateException("保存先にすでに同名フォルダが存在します: $targetPath")
+
 data class CloneParams(
     val gitUserName: String,
     val gitUserEmail: String,
     val repositoryUrl: String,
     val parentDirectoryPath: String,
     val authType: AuthType,
-    val sshPrivateKeyPath: String? = null
+    val sshPrivateKeyPath: String? = null,
+    val overwriteExisting: Boolean = false
 )
 
 class GitCloneRepository(
@@ -55,9 +59,26 @@ class GitCloneRepository(
             timeoutMillis = 5_000L
         )
         if (existsCheck.isSuccess) {
-            return Result.failure(
-                IllegalStateException("保存先にすでに同名フォルダが存在します: $targetRepoDir")
-            )
+            if (!params.overwriteExisting) {
+                return Result.failure(RepositoryAlreadyExistsException(targetRepoDir))
+            }
+            onPhaseChanged("既存の同名フォルダを削除しています...")
+            if (targetRepoDir.startsWith("/storage/") && targetRepoDir.length > 20) {
+                val removeExisting = client.execute(
+                    executablePath = "$TERMUX_BIN_PREFIX/rm",
+                    arguments = arrayOf("-rf", targetRepoDir),
+                    timeoutMillis = 15_000L
+                )
+                if (removeExisting.isFailure) {
+                    return Result.failure(
+                        IllegalStateException("既存フォルダの削除に失敗しました: $targetRepoDir")
+                    )
+                }
+            } else {
+                return Result.failure(
+                    IllegalStateException("安全のためこのパスの自動上書きは許可されていません: $targetRepoDir")
+                )
+            }
         }
 
         onPhaseChanged("リポジトリを Clone しています...")
@@ -85,6 +106,12 @@ class GitCloneRepository(
         }
 
         onPhaseChanged("Git ユーザー情報（user.name / user.email）を設定しています...")
+        client.execute(
+            executablePath = "$TERMUX_BIN_PREFIX/git",
+            arguments = arrayOf("config", "--global", "--add", "safe.directory", targetRepoDir),
+            timeoutMillis = 10_000L
+        )
+
         val setName = client.execute(
             executablePath = "$TERMUX_BIN_PREFIX/git",
             arguments = arrayOf("config", "--local", "user.name", trimmedName),
@@ -92,7 +119,16 @@ class GitCloneRepository(
             timeoutMillis = 10_000L
         )
         if (setName.isFailure) {
-            return Result.failure(IllegalStateException("git config user.name の設定に失敗しました。"))
+            withContext(NonCancellable) {
+                cleanupAbortedClone(targetRepoDir)
+            }
+            val detail = setName.exceptionOrNull()?.message?.takeIf { it.isNotBlank() }
+            return Result.failure(
+                IllegalStateException(
+                    if (detail != null) "git config user.name の設定に失敗しました: $detail"
+                    else "git config user.name の設定に失敗しました。"
+                )
+            )
         }
 
         val setEmail = client.execute(
@@ -102,9 +138,17 @@ class GitCloneRepository(
             timeoutMillis = 10_000L
         )
         if (setEmail.isFailure) {
-            return Result.failure(IllegalStateException("git config user.email の設定に失敗しました。"))
+            withContext(NonCancellable) {
+                cleanupAbortedClone(targetRepoDir)
+            }
+            val detail = setEmail.exceptionOrNull()?.message?.takeIf { it.isNotBlank() }
+            return Result.failure(
+                IllegalStateException(
+                    if (detail != null) "git config user.email の設定に失敗しました: $detail"
+                    else "git config user.email の設定に失敗しました。"
+                )
+            )
         }
-
         onPhaseChanged("Jujutsu ワークスペースを準備しています...")
         client.execute(
             executablePath = "$TERMUX_BIN_PREFIX/jj",
@@ -186,11 +230,11 @@ class GitCloneRepository(
             arguments = arrayOf("-f", "git.*clone.*$targetDir"),
             timeoutMillis = 5_000L
         )
-        if (targetDir.startsWith("/storage/") && targetDir.length > 20) {
+        if (targetDir.isNotBlank() && targetDir != "/") {
             client.execute(
                 executablePath = "$TERMUX_BIN_PREFIX/rm",
                 arguments = arrayOf("-rf", targetDir),
-                timeoutMillis = 10_000L
+                timeoutMillis = 15_000L
             )
         }
     }

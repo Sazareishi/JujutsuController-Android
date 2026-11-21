@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
@@ -22,7 +23,7 @@ data class TermuxCommandResult(
     val errorMessage: String?
 ) {
     val isSuccess: Boolean
-        get() = errorCode == 0 && exitCode == 0
+        get() = exitCode == 0 && (errorCode == 0 || (errorCode == -1 && errorMessage.isNullOrBlank()))
 }
 
 class TermuxExecutionException(

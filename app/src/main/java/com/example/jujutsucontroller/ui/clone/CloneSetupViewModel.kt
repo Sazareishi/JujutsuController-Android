@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.jujutsucontroller.domain.AuthType
 import com.example.jujutsucontroller.domain.CloneParams
 import com.example.jujutsucontroller.domain.GitCloneRepository
+import com.example.jujutsucontroller.domain.RepositoryAlreadyExistsException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class CloneSetupUiState(
+    val templateName: String = "デフォルト初期設定",
     val gitUserName: String = "",
     val gitUserEmail: String = "",
     val repositoryUrl: String = "",
@@ -32,7 +34,8 @@ data class CloneSetupUiState(
     val isCloning: Boolean = false,
     val isCancelling: Boolean = false,
     val progressMessage: String = "",
-    val generalError: String? = null
+    val generalError: String? = null,
+    val pendingOverwriteTargetPath: String? = null
 )
 
 sealed interface CloneSetupEffect {
@@ -51,6 +54,10 @@ class CloneSetupViewModel(
 
     private var cloneJob: Job? = null
     private var currentGenerationId: Long = 0L
+
+    fun onTemplateNameChanged(value: String) {
+        _uiState.update { it.copy(templateName = value, generalError = null) }
+    }
 
     fun onUserNameChanged(value: String) {
         _uiState.update { it.copy(gitUserName = value, userNameError = null, generalError = null) }
@@ -95,7 +102,44 @@ class CloneSetupViewModel(
         _uiState.update { it.copy(sshPrivateKeyPath = value, generalError = null) }
     }
 
-    fun onStartCloneClicked() {
+    fun onConfirmOverwriteClicked() {
+        _uiState.update { it.copy(pendingOverwriteTargetPath = null) }
+        onStartCloneClicked(overwriteExisting = true)
+    }
+
+    fun onDismissOverwriteDialog() {
+        _uiState.update { it.copy(pendingOverwriteTargetPath = null) }
+    }
+
+    fun applyTemplate(
+        templateName: String = "デフォルト初期設定",
+        userName: String,
+        userEmail: String,
+        repositoryUrl: String,
+        parentDirectoryPath: String,
+        authType: AuthType,
+        sshPrivateKeyPath: String
+    ) {
+        _uiState.update { state ->
+            state.copy(
+                templateName = if (templateName.isNotBlank()) templateName else state.templateName,
+                gitUserName = if (userName.isNotBlank()) userName else state.gitUserName,
+                gitUserEmail = if (userEmail.isNotBlank()) userEmail else state.gitUserEmail,
+                repositoryUrl = if (repositoryUrl.isNotBlank()) repositoryUrl else state.repositoryUrl,
+                targetParentDir = if (parentDirectoryPath.isNotBlank()) parentDirectoryPath else state.targetParentDir,
+                authType = authType,
+                isAuthTypeManuallySelected = true,
+                sshPrivateKeyPath = if (sshPrivateKeyPath.isNotBlank()) sshPrivateKeyPath else state.sshPrivateKeyPath,
+                userNameError = null,
+                userEmailError = null,
+                repoUrlError = null,
+                targetDirError = null,
+                generalError = null
+            )
+        }
+    }
+
+    fun onStartCloneClicked(overwriteExisting: Boolean = false) {
         if (cloneJob?.isActive == true || _uiState.value.isCloning) return
 
         val state = _uiState.value
@@ -123,7 +167,8 @@ class CloneSetupViewModel(
                     isCloning = true,
                     isCancelling = false,
                     progressMessage = "準備中...",
-                    generalError = null
+                    generalError = null,
+                    pendingOverwriteTargetPath = null
                 )
             }
 
@@ -135,7 +180,8 @@ class CloneSetupViewModel(
                         repositoryUrl = state.repositoryUrl,
                         parentDirectoryPath = state.targetParentDir,
                         authType = state.authType,
-                        sshPrivateKeyPath = state.sshPrivateKeyPath
+                        sshPrivateKeyPath = state.sshPrivateKeyPath,
+                        overwriteExisting = overwriteExisting
                     ),
                     onPhaseChanged = { phase ->
                         if (generation == currentGenerationId) {
@@ -154,13 +200,25 @@ class CloneSetupViewModel(
                         _effects.send(CloneSetupEffect.NavigateToWorkspace(clonedRepoPath))
                     },
                     onFailure = { throwable ->
-                        _uiState.update {
-                            it.copy(
-                                isCloning = false,
-                                isCancelling = false,
-                                progressMessage = "",
-                                generalError = throwable.message ?: "Clone に失敗しました。"
-                            )
+                        if (throwable is RepositoryAlreadyExistsException) {
+                            _uiState.update {
+                                it.copy(
+                                    isCloning = false,
+                                    isCancelling = false,
+                                    progressMessage = "",
+                                    generalError = null,
+                                    pendingOverwriteTargetPath = throwable.targetPath
+                                )
+                            }
+                        } else {
+                            _uiState.update {
+                                it.copy(
+                                    isCloning = false,
+                                    isCancelling = false,
+                                    progressMessage = "",
+                                    generalError = throwable.message ?: "Clone に失敗しました。"
+                                )
+                            }
                         }
                     }
                 )

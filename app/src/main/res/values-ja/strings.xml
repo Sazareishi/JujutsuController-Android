@@ -1,59 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="setup_title">Termux ç’°å¢ƒã‚»ãƒƒãƒˆã‚¢ãƒƒãƒ—</string>
-    <string name="setup_subtitle">Git / Jujutsu ã‚’å®Ÿè¡Œã™ã‚‹ãŸã‚ã€Termux ã®æº–å‚™çŠ¶æ³ã‚’ç¢ºèªã—ã¦ã„ã¾ã™ã€‚æˆ»ã‚‹ã¨è‡ªå‹•ã§å†åˆ¤å®šã•ã‚Œã¾ã™ã€‚</string>
-    <string name="setup_step_termux">1. Termux ã®ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«</string>
-    <string name="setup_step_permission">2. RUN_COMMAND æ¨©é™</string>
-    <string name="setup_step_connection">3. Termux ã¨ã®ç–Žé€šç¢ºèª</string>
-    <string name="setup_status_done">å®Œäº†</string>
-    <string name="setup_status_not_installed">æœªå®Œäº†</string>
-    <string name="setup_status_granted">è¨±å¯æ¸ˆã¿</string>
-    <string name="setup_status_not_granted">æœªè¨±å¯</string>
-    <string name="setup_status_verifying">ç¢ºèªä¸­...</string>
-    <string name="setup_status_action_required">è¦ç¢ºèª</string>
-    <string name="setup_checking_state">çŠ¶æ…‹ã‚’ç¢ºèªã—ã¦ã„ã¾ã™...</string>
-
-    <string name="setup_install_title">Termux ã‚’ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã—ã¦ãã ã•ã„</string>
-    <string name="setup_install_desc">ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«å¾Œã€ä¸€åº¦ Termux ã‚’é–‹ã„ã¦åˆæœŸç’°å¢ƒã‚’å±•é–‹ã—ã¦ã‹ã‚‰æˆ»ã£ã¦ãã ã•ã„ã€‚</string>
-    <string name="setup_open_termux_download">Termux é…å¸ƒãƒšãƒ¼ã‚¸ã‚’é–‹ã</string>
-
-    <string name="setup_permission_title">ã‚³ãƒžãƒ³ãƒ‰å®Ÿè¡Œæ¨©é™ã‚’è¨±å¯ã—ã¦ãã ã•ã„</string>
-    <string name="setup_permission_desc">Termux ã¸ã‚³ãƒžãƒ³ãƒ‰ã‚’é€ã‚‹ãŸã‚ RUN_COMMAND æ¨©é™ãŒå¿…è¦ã§ã™ã€‚</string>
-    <string name="setup_request_permission">æ¨©é™ã‚’è¨±å¯ã™ã‚‹</string>
-
-    <string name="setup_external_title">Termux ã®å¤–éƒ¨å®Ÿè¡Œã‚’è¨±å¯ã—ã¦ãã ã•ã„</string>
-    <string name="setup_external_desc">ä¸‹ã®ãƒœã‚¿ãƒ³ã§è¨­å®šã‚³ãƒžãƒ³ãƒ‰ã‚’ã‚³ãƒ”ãƒ¼ã—ã€Termux ã«è²¼ã‚Šä»˜ã‘ã¦å®Ÿè¡Œã—ã¦ãã ã•ã„ã€‚</string>
-    <string name="setup_copy_and_open_termux">ã‚³ãƒžãƒ³ãƒ‰ã‚’ã‚³ãƒ”ãƒ¼ã—ã¦ Termux ã‚’é–‹ã</string>
-    <string name="setup_retry_verification">ç–Žé€šã‚’å†ç¢ºèªã™ã‚‹</string>
-    <string name="setup_command_copied">ã‚³ãƒžãƒ³ãƒ‰ã‚’ã‚³ãƒ”ãƒ¼ã—ã¾ã—ãŸã€‚Termux ã«è²¼ã‚Šä»˜ã‘ã¦å®Ÿè¡Œã—ã¦ãã ã•ã„ã€‚</string>
-
-    <string name="clone_title">ãƒªãƒã‚¸ãƒˆãƒªã‚’ Clone ã—ã¦é–‹å§‹</string>
-    <string name="clone_subtitle">å®Œäº†å¾Œã«ãƒ­ãƒ¼ã‚«ãƒ«ã® user.name / user.email ã‚’è‡ªå‹•è¨­å®šã—ã€ãã®ã¾ã¾ä½œæ¥­ç”»é¢ã¸ç§»å‹•ã—ã¾ã™ã€‚</string>
-    <string name="clone_label_user_name">Git ãƒ¦ãƒ¼ã‚¶ãƒ¼å (user.name)</string>
+    <string name="setup_title">Termux 環境セットアップ</string>
+    <string name="setup_subtitle">Git / Jujutsu を実行するため、Termux の準備状況を確認しています。戻ると自動で再判定されます。</string>
+    <string name="setup_step_termux">1. Termux のインストール</string>
+    <string name="setup_step_permission">2. RUN_COMMAND 権限</string>
+    <string name="setup_step_connection">3. Termux との疎通確認</string>
+    <string name="setup_status_done">完了</string>
+    <string name="setup_status_not_installed">未完了</string>
+    <string name="setup_status_granted">許可済み</string>
+    <string name="setup_status_not_granted">未許可</string>
+    <string name="setup_status_verifying">確認中...</string>
+    <string name="setup_status_action_required">要確認</string>
+    <string name="setup_checking_state">状態を確認しています...</string>
+    <string name="setup_install_title">Termux をインストールしてください</string>
+    <string name="setup_install_desc">インストール後、一度 Termux を開いて初期環境を展開してから戻ってください。</string>
+    <string name="setup_open_termux_download">Termux 配布ページを開く</string>
+    <string name="setup_permission_title">コマンド実行権限を許可してください</string>
+    <string name="setup_permission_desc">Termux へコマンドを送るため RUN_COMMAND 権限が必要です。</string>
+    <string name="setup_request_permission">権限を許可する</string>
+    <string name="setup_external_title">Termux の外部実行を許可してください</string>
+    <string name="setup_external_desc">下のボタンで設定コマンドをコピーし、Termux に貼り付けて実行してください。</string>
+    <string name="setup_copy_and_open_termux">コマンドをコピーして Termux を開く</string>
+    <string name="setup_retry_verification">疎通を再確認する</string>
+    <string name="setup_command_copied">コマンドをコピーしました。Termux に貼り付けて実行してください。</string>
+    <string name="clone_title">リポジトリを Clone して開始</string>
+    <string name="clone_subtitle">完了後にローカルの user.name / user.email を自動設定し、そのまま作業画面へ移動します。</string>
+    <string name="clone_label_user_name">Git ユーザー名 (user.name)</string>
     <string name="clone_hint_user_name">Taro Yamada</string>
-    <string name="clone_label_user_email">ãƒ¡ãƒ¼ãƒ«ã‚¢ãƒ‰ãƒ¬ã‚¹ (user.email)</string>
+    <string name="clone_label_user_email">メールアドレス (user.email)</string>
     <string name="clone_hint_user_email">you@example.com</string>
-    <string name="clone_label_repo_url">ãƒªãƒã‚¸ãƒˆãƒª URL (HTTPS / SSH)</string>
-    <string name="clone_hint_repo_url">https://github.com/user/repo.git ã¾ãŸã¯ git@github.com:user/repo.git</string>
+    <string name="clone_label_repo_url">リポジトリ URL (HTTPS / SSH)</string>
+    <string name="clone_hint_repo_url">https://github.com/user/repo.git または git@github.com:user/repo.git</string>
     <string name="clone_auth_https">HTTPS</string>
-    <string name="clone_auth_ssh">SSH å…¬é–‹éµ</string>
-    <string name="clone_label_ssh_key_path">SSH ç§˜å¯†éµãƒ‘ã‚¹ (Termux å†…ãƒ‘ã‚¹)</string>
-    <string name="clone_label_parent_dir">ä¿å­˜å…ˆè¦ªãƒ•ã‚©ãƒ«ãƒ€ï¼ˆå…±æœ‰ã‚¹ãƒˆãƒ¬ãƒ¼ã‚¸æŽ¨å¥¨ï¼‰</string>
-    <string name="clone_choose_folder">ãƒ•ã‚©ãƒ«ãƒ€ã‚’é¸æŠžã™ã‚‹</string>
-    <string name="clone_start_button">Clone ã—ã¦ä½œæ¥­ã‚’é–‹å§‹</string>
-    <string name="clone_cancel_button">Clone ã‚’ä¸­æ­¢ã™ã‚‹</string>
-    <string name="clone_cancelling">åœæ­¢ä¸­...</string>
-
-    <string name="workspace_title">ä½œæ¥­ãƒ¯ãƒ¼ã‚¯ã‚¹ãƒšãƒ¼ã‚¹</string>
-    <string name="workspace_active_repo">ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ãªãƒªãƒã‚¸ãƒˆãƒª</string>
-    <string name="workspace_current_status">ç¾åœ¨ã®ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹</string>
-    <string name="workspace_loading_status">çŠ¶æ…‹ã‚’èª­ã¿è¾¼ã‚“ã§ã„ã¾ã™...</string>
-    <string name="workspace_refresh_status">çŠ¶æ…‹ã‚’æ›´æ–°</string>
-    <string name="workspace_open_new_clone">åˆ¥ã®ãƒªãƒã‚¸ãƒˆãƒªã‚’ Clone</string>
-
-    <string name="error_user_name_required">ãƒ¦ãƒ¼ã‚¶ãƒ¼åã‚’å…¥åŠ›ã—ã¦ãã ã•ã„</string>
-    <string name="error_user_email_invalid">æœ‰åŠ¹ãªãƒ¡ãƒ¼ãƒ«ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„</string>
-    <string name="error_repo_url_invalid">HTTPS ã¾ãŸã¯ SSH ã®ãƒªãƒã‚¸ãƒˆãƒªURLã‚’å…¥åŠ›ã—ã¦ãã ã•ã„</string>
-    <string name="error_parent_dir_required">ä¿å­˜å…ˆãƒ•ã‚©ãƒ«ãƒ€ã‚’æŒ‡å®šã—ã¦ãã ã•ã„</string>
-    <string name="error_command_timeout">Termux ã‹ã‚‰ã®å¿œç­”ãŒ %1$d ç§’ä»¥å†…ã«è¿”ã‚Šã¾ã›ã‚“ã§ã—ãŸã€‚</string>
+    <string name="clone_auth_ssh">SSH 公開鍵</string>
+    <string name="clone_label_ssh_key_path">SSH 秘密鍵パス (Termux 内パス)</string>
+    <string name="clone_label_parent_dir">保存先親フォルダ（共有ストレージ推奨）</string>
+    <string name="clone_choose_folder">フォルダを選択する</string>
+    <string name="clone_start_button">Clone して作業を開始</string>
+    <string name="clone_cancel_button">Clone を中止する</string>
+    <string name="clone_cancelling">停止中...</string>
+    <string name="workspace_title">作業ワークスペース</string>
+    <string name="workspace_active_repo">アクティブなリポジトリ</string>
+    <string name="workspace_current_status">現在のステータス</string>
+    <string name="workspace_loading_status">状態を読み込んでいます...</string>
+    <string name="workspace_refresh_status">状態を更新</string>
+    <string name="workspace_open_new_clone">別のリポジトリを Clone</string>
+    <string name="error_user_name_required">ユーザー名を入力してください</string>
+    <string name="error_user_email_invalid">有効なメールアドレスを入力してください</string>
+    <string name="error_repo_url_invalid">HTTPS または SSH のリポジトリURLを入力してください</string>
+    <string name="error_parent_dir_required">保存先フォルダを指定してください</string>
+    <string name="error_command_timeout">Termux からの応答が %1$d 秒以内に返りませんでした。</string>
 </resources>
