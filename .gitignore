@@ -1,0 +1,22 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Release signing secrets
+keystore.properties
+key.properties
+*.jks
+*.keystore
+# Local Android SDK artifacts in project root
+/build-tools/
+/platform-tools/
+/platforms/
+/licenses/
+/.knownPackages
