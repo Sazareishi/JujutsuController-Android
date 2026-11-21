@@ -34,9 +34,9 @@
     <string name="clone_title">Clone Repository to Start</string>
     <string name="clone_subtitle">Local user.name and user.email will be configured automatically before opening the workspace.</string>
     <string name="clone_label_user_name">Git User Name (user.name)</string>
-    <string name="clone_hint_user_name">Taro Yamada</string>
+    <string name="clone_hint_user_name">Alex Rivera</string>
     <string name="clone_label_user_email">Email Address (user.email)</string>
-    <string name="clone_hint_user_email">taro@example.com</string>
+    <string name="clone_hint_user_email">you@example.com</string>
     <string name="clone_label_repo_url">Repository URL (HTTPS / SSH)</string>
     <string name="clone_hint_repo_url">https://github.com/user/repo.git or git@github.com:user/repo.git</string>
     <string name="clone_auth_https">HTTPS</string>
