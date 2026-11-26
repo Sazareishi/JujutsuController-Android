@@ -1,11 +1,5 @@
-package com.example.jujutsucontroller
+﻿package com.example.jujutsucontroller
 
-import androidx.compose.foundation.interaction.FocusInteraction
-import androidx.core.content.FileProvider
-import java.io.File
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
-import androidx.compose.foundation.clickable
 import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -14,70 +8,90 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.provider.DocumentsContract
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.rememberCoroutineScope
-import com.example.jujutsucontroller.domain.JjActionType
-import com.example.jujutsucontroller.domain.JjCommandOutput
-import com.example.jujutsucontroller.domain.JjRepository
-import com.example.jujutsucontroller.domain.AppPreferencesRepository
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.jujutsucontroller.domain.AppPreferencesRepository
 import com.example.jujutsucontroller.domain.AuthType
+import com.example.jujutsucontroller.domain.CloneParams
 import com.example.jujutsucontroller.domain.GitCloneRepository
+import com.example.jujutsucontroller.domain.JjActionType
+import com.example.jujutsucontroller.domain.JjCommandOutput
+import com.example.jujutsucontroller.domain.JjRepository
+import com.example.jujutsucontroller.domain.SavedAppSettings
 import com.example.jujutsucontroller.termux.TermuxCommandClient
 import com.example.jujutsucontroller.termux.TermuxEnvironmentChecker
 import com.example.jujutsucontroller.ui.clone.CloneSetupEffect
@@ -85,10 +99,64 @@ import com.example.jujutsucontroller.ui.clone.CloneSetupViewModel
 import com.example.jujutsucontroller.ui.setup.SetupStep
 import com.example.jujutsucontroller.ui.setup.TermuxSetupEffect
 import com.example.jujutsucontroller.ui.setup.TermuxSetupViewModel
+import kotlinx.coroutines.launch
+import java.io.File
+
+private val JjcBgDark = Color(0xFF070B10)
+private val JjcSurfaceDark = Color(0xFF0E141D)
+private val JjcCardDark = Color(0xFF141C27)
+private val JjcBorderDark = Color(0xFF283342)
+private val JjcAccentBlue = Color(0xFF49C5FF)
+private val JjcAccentTextDark = Color(0xFF06131C)
+private val JjcTextPrimary = Color(0xFFE6EDF5)
+private val JjcTextSecondary = Color(0xFF9AA7B8)
+private val JjcErrorText = Color(0xFFFF8A8A)
+private val JjcErrorCardBg = Color(0xFF2B1115)
+private val JjcErrorCardBorder = Color(0xFF8B2E36)
+
+private val JjcDarkColorScheme = darkColorScheme(
+    primary = JjcAccentBlue,
+    onPrimary = JjcAccentTextDark,
+    primaryContainer = Color(0xFF133347),
+    onPrimaryContainer = Color(0xFFBBE7FF),
+    secondary = Color(0xFF253244),
+    onSecondary = JjcTextPrimary,
+    background = JjcBgDark,
+    onBackground = JjcTextPrimary,
+    surface = JjcSurfaceDark,
+    onSurface = JjcTextPrimary,
+    surfaceVariant = JjcCardDark,
+    onSurfaceVariant = JjcTextSecondary,
+    outline = JjcBorderDark,
+    error = JjcErrorText,
+    onError = Color(0xFF220707),
+    errorContainer = JjcErrorCardBg,
+    onErrorContainer = JjcErrorText
+)
+
+private val JjcShapeSmall = RoundedCornerShape(8.dp)
+private val JjcShapeMedium = RoundedCornerShape(10.dp)
+
+enum class AppLanguage(val labelJa: String, val labelEn: String) {
+    SYSTEM("システム設定", "System"),
+    JA("日本語", "日本語"),
+    EN("English", "English")
+}
+
+
+private fun resolveUseEnglish(language: AppLanguage): Boolean {
+    return when (language) {
+        AppLanguage.SYSTEM -> java.util.Locale.getDefault().language != "ja"
+        AppLanguage.JA -> false
+        AppLanguage.EN -> true
+    }
+}
 
 sealed interface AppRoute {
     data object Setup : AppRoute
     data object Clone : AppRoute
+    data class InitialSettings(val isOnboarding: Boolean = false) : AppRoute
+    data class RepositorySelector(val currentRepoPath: String) : AppRoute
     data class Workspace(val repoPath: String) : AppRoute
 }
 
@@ -107,85 +175,131 @@ class MainActivity : ComponentActivity() {
         val cloneViewModel = CloneSetupViewModel(cloneRepository)
 
         setContent {
-            MaterialTheme {
+            MaterialTheme(colorScheme = JjcDarkColorScheme) {
                 var currentRoute by remember { mutableStateOf<AppRoute>(AppRoute.Setup) }
+                var settingsRevision by remember { mutableStateOf(0) }
+                val savedSettings = remember(currentRoute, settingsRevision) {
+                    prefsRepository.loadSettings()
+                }
+                var selectedLanguage by remember {
+                    mutableStateOf(
+                        runCatching { AppLanguage.valueOf(prefsRepository.loadAppLanguage()) }
+                            .getOrDefault(AppLanguage.SYSTEM)
+                    )
+                }
+                val useEnglish = resolveUseEnglish(selectedLanguage)
 
                 when (val route = currentRoute) {
                     AppRoute.Setup -> {
                         TermuxSetupRoute(
                             viewModel = setupViewModel,
-                            onNavigateToClone = { currentRoute = AppRoute.Clone }
+                            useEnglish = useEnglish,
+                            selectedLanguage = selectedLanguage,
+                            onSelectLanguage = { newLang ->
+                                selectedLanguage = newLang
+                                prefsRepository.saveAppLanguage(newLang.name)
+                            },
+                            onNavigateToClone = {
+                                val latest = prefsRepository.loadSettings()
+                                val hasAuthorInfo =
+                                    latest.gitUserName.isNotBlank() && latest.gitUserEmail.isNotBlank()
+                                val target = latest.activeRepositoryPath
+
+                                currentRoute = when {
+                                    !hasAuthorInfo -> AppRoute.InitialSettings(isOnboarding = true)
+                                    !target.isNullOrBlank() -> AppRoute.Workspace(target)
+                                    else -> AppRoute.Clone
+                                }
+                            }
                         )
                     }
 
                     AppRoute.Clone -> {
-                        var templateRevision by remember { mutableStateOf(0) }
-                        val savedSettings = remember(currentRoute, templateRevision) { prefsRepository.loadSettings() }
                         CloneSetupRoute(
                             viewModel = cloneViewModel,
                             savedSettings = savedSettings,
-                            onSaveTemplate = { currentUi, customTemplateName ->
-                                prefsRepository.saveTemplate(
-                                    templateName = customTemplateName.ifBlank { savedSettings.templateName },
-                                    userName = currentUi.gitUserName,
-                                    userEmail = currentUi.gitUserEmail,
-                                    repositoryUrl = currentUi.repositoryUrl,
-                                    parentDirectoryPath = currentUi.targetParentDir,
-                                    authType = currentUi.authType,
-                                    sshPrivateKeyPath = currentUi.sshPrivateKeyPath
-                                )
-                                templateRevision++
-                            },
-                            onReopenExistingRepository = { repoPath ->
-                                prefsRepository.setActiveRepository(repoPath)
-                                currentRoute = AppRoute.Workspace(repoPath)
-                            },
+                            useEnglish = useEnglish,
                             onNavigateToWorkspace = { repoPath ->
                                 val state = cloneViewModel.uiState.value
                                 prefsRepository.saveCloneSession(
-                                    userName = state.gitUserName,
-                                    userEmail = state.gitUserEmail,
+                                    userName = state.gitUserName.ifBlank { savedSettings.gitUserName },
+                                    userEmail = state.gitUserEmail.ifBlank { savedSettings.gitUserEmail },
                                     repositoryUrl = state.repositoryUrl,
-                                    parentDirectoryPath = state.targetParentDir,
+                                    parentDirectoryPath = state.targetParentDir.ifBlank { savedSettings.parentDirectoryPath },
                                     clonedRepoPath = repoPath,
                                     authType = state.authType,
-                                    sshPrivateKeyPath = state.sshPrivateKeyPath,
+                                    sshPrivateKeyPath = state.sshPrivateKeyPath.ifBlank { savedSettings.sshPrivateKeyPath },
                                     templateName = state.templateName
                                 )
+                                settingsRevision++
                                 currentRoute = AppRoute.Workspace(repoPath)
                             }
                         )
                     }
+
+                    is AppRoute.InitialSettings -> {
+                        InitialSettingsRoute(
+                            savedSettings = savedSettings,
+                            isOnboarding = route.isOnboarding,
+                            selectedLanguage = selectedLanguage,
+                            onSelectLanguage = { newLang ->
+                                selectedLanguage = newLang
+                                prefsRepository.saveAppLanguage(newLang.name)
+                            },
+                            onSaveSettings = { uName, uEmail, pDir, auth, sshKey ->
+                                prefsRepository.saveAppLanguage(selectedLanguage.name)
+                                prefsRepository.updateInitialSettings(uName, uEmail, pDir, auth, sshKey)
+                                settingsRevision++
+                                val updated = prefsRepository.loadSettings()
+                                val returnRepo = updated.activeRepositoryPath
+                                currentRoute = if (!returnRepo.isNullOrBlank()) {
+                                    AppRoute.Workspace(returnRepo)
+                                } else {
+                                    AppRoute.Clone
+                                }
+                            },
+                            onBack = {
+                                val returnRepo = savedSettings.activeRepositoryPath
+                                currentRoute = if (!returnRepo.isNullOrBlank()) {
+                                    AppRoute.Workspace(returnRepo)
+                                } else {
+                                    AppRoute.Clone
+                                }
+                            }
+                        )
+                    }
+
+                    is AppRoute.RepositorySelector -> {
+                        RepositorySelectorRoute(
+                            currentRepoPath = route.currentRepoPath,
+                            prefsRepository = prefsRepository,
+                            jjRepository = jjRepository,
+                            useEnglish = useEnglish,
+                            onSelectRepository = { chosenRepo ->
+                                prefsRepository.setActiveRepository(chosenRepo)
+                                settingsRevision++
+                                currentRoute = AppRoute.Workspace(chosenRepo)
+                            },
+                            onBackToWorkspace = { targetRepo ->
+                                val dest = targetRepo.ifBlank { route.currentRepoPath }
+                                currentRoute = if (dest.isNotBlank()) AppRoute.Workspace(dest) else AppRoute.Clone
+                            }
+                        )
+                    }
+
                     is AppRoute.Workspace -> {
-                        LaunchedEffect(route.repoPath) { prefsRepository.setActiveRepository(route.repoPath) }
+                        LaunchedEffect(route.repoPath) {
+                            prefsRepository.setActiveRepository(route.repoPath)
+                        }
                         WorkspaceScreen(
                             repoPath = route.repoPath,
-                            cloneRepository = cloneRepository,
                             jjRepository = jjRepository,
-                            onOpenNewClone = { currentRoute = AppRoute.Clone },
-                            onEditRepository = { oldPath, newPath, newUrl, newParentDir ->
-                                val cleanedOld = oldPath.trim()
-                                val cleanedNew = newPath.trim().ifEmpty { cleanedOld }
-                                val settings = prefsRepository.loadSettings()
-                                if (cleanedOld.isNotEmpty() && cleanedOld != cleanedNew) {
-                                    prefsRepository.removeRepository(cleanedOld)
-                                }
-                                if (cleanedNew.isNotEmpty()) {
-                                    prefsRepository.setActiveRepository(cleanedNew)
-                                    prefsRepository.saveCloneSession(
-                                        userName = settings.gitUserName,
-                                        userEmail = settings.gitUserEmail,
-                                        repositoryUrl = newUrl.trim().ifEmpty { settings.repositoryUrl },
-                                        parentDirectoryPath = newParentDir.trim().ifEmpty { settings.parentDirectoryPath },
-                                        clonedRepoPath = cleanedNew,
-                                        authType = settings.resolvedAuthType(),
-                                        sshPrivateKeyPath = settings.sshPrivateKeyPath,
-                                        templateName = settings.templateName
-                                    )
-                                    if (cleanedNew != cleanedOld) {
-                                        currentRoute = AppRoute.Workspace(cleanedNew)
-                                    }
-                                }
+                            useEnglish = useEnglish,
+                            onOpenRepositorySelector = {
+                                currentRoute = AppRoute.RepositorySelector(route.repoPath)
+                            },
+                            onOpenInitialSettings = {
+                                currentRoute = AppRoute.InitialSettings(isOnboarding = false)
                             }
                         )
                     }
@@ -196,8 +310,288 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+private fun JjcScreenHeader(
+    title: String,
+    subtitle: String,
+    detail: String? = null,
+    useEnglish: Boolean = java.util.Locale.getDefault().language != "ja",
+    trailing: (@Composable () -> Unit)? = null
+) {
+    var isDetailTruncated by remember(detail) { mutableStateOf(false) }
+    var showFullDetailDialog by remember(detail) { mutableStateOf(false) }
+
+    if (showFullDetailDialog && !detail.isNullOrBlank()) {
+        AlertDialog(
+            onDismissRequest = { showFullDetailDialog = false },
+            containerColor = JjcCardDark,
+            title = { Text(if (useEnglish) "Repository Path" else "リポジトリパス", color = JjcAccentBlue) },
+            text = {
+                Text(
+                    text = detail,
+                    color = JjcTextPrimary,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showFullDetailDialog = false }) {
+                    Text(if (useEnglish) "Close" else "閉じる", color = JjcAccentBlue)
+                }
+            }
+        )
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = JjcBgDark
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 88.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = title,
+                        color = JjcAccentBlue,
+                        style = MaterialTheme.typography.headlineSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = subtitle,
+                        color = JjcTextPrimary,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2,
+                        softWrap = true,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (!detail.isNullOrBlank()) {
+                        val pathModifier = if (isDetailTruncated) {
+                            Modifier.clickable { showFullDetailDialog = true }
+                        } else {
+                            Modifier
+                        }
+                        Text(
+                            text = detail,
+                            color = if (isDetailTruncated) JjcAccentBlue else JjcTextSecondary,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 2,
+                            softWrap = true,
+                            overflow = TextOverflow.Ellipsis,
+                            onTextLayout = { layoutResult ->
+                                isDetailTruncated = layoutResult.hasVisualOverflow
+                            },
+                            modifier = pathModifier
+                        )
+                    }
+                }
+                if (trailing != null) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    trailing()
+                }
+            }
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = JjcBorderDark,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun JjcInputField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String? = null,
+    errorMessage: String? = null,
+    enabled: Boolean = true,
+    monospace: Boolean = false
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            enabled = enabled,
+            isError = errorMessage != null,
+            singleLine = true,
+            shape = JjcShapeSmall,
+            label = { Text(label) },
+            placeholder = placeholder?.let { { Text(it) } },
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                fontFamily = if (monospace) FontFamily.Monospace else FontFamily.Default
+            ),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = JjcSurfaceDark,
+                unfocusedContainerColor = JjcSurfaceDark,
+                disabledContainerColor = JjcCardDark,
+                focusedBorderColor = JjcAccentBlue,
+                unfocusedBorderColor = JjcBorderDark,
+                focusedLabelColor = JjcAccentBlue,
+                unfocusedLabelColor = JjcTextSecondary,
+                focusedTextColor = JjcTextPrimary,
+                unfocusedTextColor = JjcTextPrimary,
+                errorBorderColor = JjcErrorText,
+                errorLabelColor = JjcErrorText
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (errorMessage != null) {
+            JjcErrorText(message = errorMessage)
+        }
+    }
+}
+
+@Composable
+private fun JjcErrorText(
+    message: String,
+    useEnglish: Boolean = java.util.Locale.getDefault().language != "ja"
+) {
+    Text(
+        text = if (useEnglish) "Error: $message" else "エラー: $message",
+        color = JjcErrorText,
+        style = MaterialTheme.typography.bodySmall
+    )
+}
+
+@Composable
+private fun JjcErrorCard(
+    title: String,
+    message: String,
+    useEnglish: Boolean = java.util.Locale.getDefault().language != "ja"
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = JjcShapeMedium,
+        colors = CardDefaults.cardColors(containerColor = JjcErrorCardBg),
+        border = BorderStroke(1.dp, JjcErrorCardBorder)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = title,
+                color = JjcErrorText,
+                style = MaterialTheme.typography.labelLarge
+            )
+            Text(
+                text = message.ifBlank { if (useEnglish) "An unknown error occurred." else "不明なエラーが発生しました。" },
+                color = JjcTextPrimary,
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace
+            )
+        }
+    }
+}
+
+@Composable
+private fun JjcPrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier.fillMaxWidth()
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        shape = JjcShapeMedium,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = JjcAccentBlue,
+            contentColor = JjcAccentTextDark,
+            disabledContainerColor = JjcAccentBlue.copy(alpha = 0.4f),
+            disabledContentColor = JjcAccentTextDark.copy(alpha = 0.6f)
+        ),
+        modifier = modifier.height(48.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun JjcSecondaryButton(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier.fillMaxWidth()
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        shape = JjcShapeMedium,
+        border = BorderStroke(1.dp, JjcBorderDark),
+        modifier = modifier.height(48.dp)
+    ) {
+        Text(
+            text = text,
+            color = if (enabled) JjcTextPrimary else JjcTextSecondary,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun JjcAuthTypeSelector(
+    selected: AuthType,
+    onSelect: (AuthType) -> Unit
+) {
+    val availableAuthTypes = remember { AuthType.entries.toList() }
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        availableAuthTypes.forEach { option ->
+            FilterChip(
+                selected = selected == option,
+                onClick = { onSelect(option) },
+                shape = JjcShapeSmall,
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = JjcCardDark,
+                    labelColor = JjcTextPrimary,
+                    selectedContainerColor = Color(0xFF133347),
+                    selectedLabelColor = JjcAccentBlue
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = selected == option,
+                    borderColor = JjcBorderDark,
+                    selectedBorderColor = JjcAccentBlue
+                ),
+                label = { Text(option.name, maxLines = 1, softWrap = false) }
+            )
+        }
+    }
+}
+
+@Composable
 fun TermuxSetupRoute(
     viewModel: TermuxSetupViewModel,
+    useEnglish: Boolean = java.util.Locale.getDefault().language != "ja",
+    selectedLanguage: AppLanguage = AppLanguage.SYSTEM,
+    onSelectLanguage: (AppLanguage) -> Unit = {},
     onNavigateToClone: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -235,11 +629,9 @@ fun TermuxSetupRoute(
                         Intent(Intent.ACTION_VIEW, Uri.parse(TermuxEnvironmentChecker.TERMUX_RELEASES_URL))
                     )
                 }
-
                 TermuxSetupEffect.RequestRunCommandPermission -> {
                     permissionLauncher.launch(TermuxEnvironmentChecker.PERMISSION_RUN_COMMAND)
                 }
-
                 TermuxSetupEffect.OpenAppSettings -> {
                     context.startActivity(
                         Intent(
@@ -248,7 +640,6 @@ fun TermuxSetupRoute(
                         )
                     )
                 }
-
                 is TermuxSetupEffect.CopyCommandAndLaunchTermux -> {
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     clipboard.setPrimaryClip(ClipData.newPlainText("Termux Setup", effect.command))
@@ -261,178 +652,279 @@ fun TermuxSetupRoute(
                         .getLaunchIntentForPackage(TermuxEnvironmentChecker.TERMUX_PACKAGE)
                         ?.let { context.startActivity(it) }
                 }
-
                 TermuxSetupEffect.NavigateToCloneScreen -> onNavigateToClone()
             }
         }
     }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Surface(modifier = Modifier.fillMaxSize(), color = JjcBgDark) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .statusBarsPadding()
+                .navigationBarsPadding()
         ) {
-            Text(context.getString(R.string.setup_title), style = MaterialTheme.typography.headlineSmall)
-            Text(
-                context.getString(R.string.setup_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            JjcScreenHeader(
+                title = if (useEnglish) "Termux Setup" else context.getString(R.string.setup_title),
+                subtitle = if (useEnglish) "Verify Termux connection and run-command permission" else "Termux の接続と実行権限を確認",
+                useEnglish = useEnglish
             )
 
-            StatusRow(
-                context.getString(R.string.setup_step_termux),
-                if (uiState.isTermuxInstalled) {
-                    context.getString(R.string.setup_status_done)
-                } else {
-                    context.getString(R.string.setup_status_not_installed)
-                }
-            )
-            StatusRow(
-                context.getString(R.string.setup_step_permission),
-                if (uiState.hasRunCommandPermission) {
-                    context.getString(R.string.setup_status_granted)
-                } else {
-                    context.getString(R.string.setup_status_not_granted)
-                }
-            )
-            StatusRow(
-                context.getString(R.string.setup_step_connection),
-                when {
-                    uiState.step == SetupStep.READY -> context.getString(R.string.setup_status_done)
-                    uiState.isVerifying -> context.getString(R.string.setup_status_verifying)
-                    else -> context.getString(R.string.setup_status_action_required)
-                }
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = JjcShapeMedium,
+                    colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                    border = BorderStroke(1.dp, JjcBorderDark)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                    Text(
+                        text = if (useEnglish) "Display Language" else "表示言語",
+                        color = JjcTextPrimary,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        AppLanguage.entries.forEach { langOption ->
+                            val chipText = if (useEnglish) langOption.labelEn else langOption.labelJa
+                            FilterChip(
+                                selected = selectedLanguage == langOption,
+                                onClick = { onSelectLanguage(langOption) },
+                                shape = JjcShapeSmall,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = JjcCardDark,
+                                    labelColor = JjcTextPrimary,
+                                    selectedContainerColor = Color(0xFF133347),
+                                    selectedLabelColor = JjcAccentBlue
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    enabled = true,
+                                    selected = selectedLanguage == langOption,
+                                    borderColor = JjcBorderDark,
+                                    selectedBorderColor = JjcAccentBlue
+                                ),
+                                label = { Text(chipText, maxLines = 1, softWrap = false) }
+                            )
+                        }
+                    }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            when (uiState.step) {
-                SetupStep.CHECKING, SetupStep.READY -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(context.getString(R.string.setup_checking_state))
+                    HorizontalDivider(color = JjcBorderDark, thickness = 1.dp)
+                        StatusRow(
+                            label = if (useEnglish) "1. Install Termux" else context.getString(R.string.setup_step_termux),
+                            value = if (uiState.isTermuxInstalled) {
+                                if (useEnglish) "Done" else context.getString(R.string.setup_status_done)
+                            } else {
+                                if (useEnglish) "Not Installed" else context.getString(R.string.setup_status_not_installed)
+                            }
+                        )
+                        StatusRow(
+                            label = if (useEnglish) "2. RUN_COMMAND Permission" else context.getString(R.string.setup_step_permission),
+                            value = if (uiState.hasRunCommandPermission) {
+                                if (useEnglish) "Granted" else context.getString(R.string.setup_status_granted)
+                            } else {
+                                if (useEnglish) "Not Granted" else context.getString(R.string.setup_status_not_granted)
+                            }
+                        )
+                        StatusRow(
+                            label = if (useEnglish) "3. Termux Connection Check" else context.getString(R.string.setup_step_connection),
+                            value = when {
+                                uiState.step == SetupStep.READY -> if (useEnglish) "Done" else context.getString(R.string.setup_status_done)
+                                uiState.isVerifying -> if (useEnglish) "Verifying..." else context.getString(R.string.setup_status_verifying)
+                                else -> if (useEnglish) "Action Required" else context.getString(R.string.setup_status_action_required)
+                            }
+                        )
                     }
                 }
 
-                SetupStep.INSTALL_TERMUX -> {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                when (uiState.step) {
+                    SetupStep.CHECKING, SetupStep.READY -> {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = JjcShapeMedium,
+                            colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                            border = BorderStroke(1.dp, JjcBorderDark)
                         ) {
-                            Text(context.getString(R.string.setup_install_title), style = MaterialTheme.typography.titleMedium)
-                            Text(context.getString(R.string.setup_install_desc))
-                            Button(
-                                onClick = viewModel::onInstallTermuxClicked,
-                                modifier = Modifier.fillMaxWidth()
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(context.getString(R.string.setup_open_termux_download))
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = JjcAccentBlue
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(if (useEnglish) "Checking Termux state..." else context.getString(R.string.setup_checking_state), color = JjcTextSecondary)
                             }
                         }
                     }
-                }
-
-                SetupStep.GRANT_RUN_COMMAND -> {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                    SetupStep.INSTALL_TERMUX -> {
+                        Card(
+                            shape = JjcShapeMedium,
+                            colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                            border = BorderStroke(1.dp, JjcBorderDark)
                         ) {
-                            Text(context.getString(R.string.setup_permission_title), style = MaterialTheme.typography.titleMedium)
-                            Text(context.getString(R.string.setup_permission_desc))
-                            Button(
-                                onClick = viewModel::onRequestPermissionClicked,
-                                modifier = Modifier.fillMaxWidth()
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Text(context.getString(R.string.setup_request_permission))
-                            }
-                        }
-                    }
-                }
-
-                SetupStep.CONFIGURE_EXTERNAL_APPS -> {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(context.getString(R.string.setup_external_title), style = MaterialTheme.typography.titleMedium)
-                            Text(context.getString(R.string.setup_external_desc))
-                            Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
                                 Text(
-                                    text = TermuxEnvironmentChecker.SETUP_EXTERNAL_APPS_COMMAND,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontFamily = FontFamily.Monospace,
-                                    modifier = Modifier.padding(12.dp)
+                                    text = if (useEnglish) "Please install Termux" else context.getString(R.string.setup_install_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = JjcTextPrimary
+                                )
+                                Text(if (useEnglish) "Termux is required to run Git and Jujutsu commands." else context.getString(R.string.setup_install_desc), color = JjcTextSecondary)
+                                JjcPrimaryButton(
+                                    text = if (useEnglish) "Open Termux Download" else context.getString(R.string.setup_open_termux_download),
+                                    onClick = viewModel::onInstallTermuxClicked
                                 )
                             }
-                            Button(
-                                onClick = viewModel::onCopyCommandAndOpenTermuxClicked,
-                                enabled = !uiState.isVerifying,
-                                modifier = Modifier.fillMaxWidth()
+                        }
+                    }
+                    SetupStep.GRANT_RUN_COMMAND -> {
+                        Card(
+                            shape = JjcShapeMedium,
+                            colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                            border = BorderStroke(1.dp, JjcBorderDark)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Text(context.getString(R.string.setup_copy_and_open_termux))
+                                Text(
+                                    text = if (useEnglish) "Please allow command execution permission" else context.getString(R.string.setup_permission_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = JjcTextPrimary
+                                )
+                                Text(if (useEnglish) "RUN_COMMAND permission is required to send commands to Termux." else context.getString(R.string.setup_permission_desc), color = JjcTextSecondary)
+                                JjcPrimaryButton(
+                                    text = if (useEnglish) "Grant Permission" else context.getString(R.string.setup_request_permission),
+                                    onClick = viewModel::onRequestPermissionClicked
+                                )
                             }
-                            OutlinedButton(
-                                onClick = viewModel::onRetryVerificationClicked,
-                                enabled = !uiState.isVerifying,
-                                modifier = Modifier.fillMaxWidth()
+                        }
+                    }
+                    SetupStep.CONFIGURE_EXTERNAL_APPS -> {
+                        Card(
+                            shape = JjcShapeMedium,
+                            colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                            border = BorderStroke(1.dp, JjcBorderDark)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Text(context.getString(R.string.setup_retry_verification))
+                                Text(
+                                    text = if (useEnglish) "Configure external apps in Termux" else context.getString(R.string.setup_external_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = JjcTextPrimary
+                                )
+                                Text(if (useEnglish) "Run the command in Termux to enable external commands." else context.getString(R.string.setup_external_desc), color = JjcTextSecondary)
+                                Surface(
+                                    color = JjcSurfaceDark,
+                                    shape = JjcShapeSmall,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = TermuxEnvironmentChecker.SETUP_EXTERNAL_APPS_COMMAND,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = JjcTextPrimary,
+                                        modifier = Modifier.padding(12.dp)
+                                    )
+                                }
+                                if (uiState.isVerifying) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(18.dp),
+                                            strokeWidth = 2.dp,
+                                            color = JjcAccentBlue
+                                        )
+                                        Text(
+                                            text = "Termux の外部実行設定を確認しています...",
+                                            color = JjcTextSecondary,
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                }
+                                JjcPrimaryButton(
+                                    text = if (useEnglish) "Copy Command & Open Termux" else context.getString(R.string.setup_copy_and_open_termux),
+                                    onClick = viewModel::onCopyCommandAndOpenTermuxClicked,
+                                    enabled = !uiState.isVerifying
+                                )
+                                JjcSecondaryButton(
+                                    text = if (uiState.isVerifying) "確認中..." else "設定完了後に再確認",
+                                    onClick = viewModel::onRetryVerificationClicked,
+                                    enabled = !uiState.isVerifying
+                                )
                             }
                         }
                     }
                 }
-            }
 
-            if (uiState.errorMessage != null) {
-                Text(
-                    text = uiState.errorMessage!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+                if (uiState.errorMessage != null) {
+                    JjcErrorCard(
+                        title = if (useEnglish) "Setup Error" else "セットアップエラー",
+                        message = uiState.errorMessage!!,
+                        useEnglish = useEnglish
+                    )
+                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CloneSetupRoute(
     viewModel: CloneSetupViewModel,
-    savedSettings: com.example.jujutsucontroller.domain.SavedAppSettings = com.example.jujutsucontroller.domain.SavedAppSettings(),
-    onSaveTemplate: (com.example.jujutsucontroller.ui.clone.CloneSetupUiState, String) -> Unit = { _, _ -> },
-    onReopenExistingRepository: (String) -> Unit = {},
+    savedSettings: SavedAppSettings = SavedAppSettings(),
+    useEnglish: Boolean = java.util.Locale.getDefault().language != "ja",
     onNavigateToWorkspace: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    LaunchedEffect(useEnglish) { viewModel.setUseEnglish(useEnglish) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var localUrl by remember(savedSettings.repositoryUrl) {
+        mutableStateOf(uiState.repositoryUrl.ifBlank { savedSettings.repositoryUrl })
+    }
+    var localSaveDir by remember(savedSettings.parentDirectoryPath) {
+        mutableStateOf(
+            uiState.targetParentDir.ifBlank {
+                savedSettings.parentDirectoryPath.ifBlank { "/data/data/com.termux/files/home/repos" }
+            }
+        )
+    }
+    var urlError by remember { mutableStateOf<String?>(null) }
+    var saveDirError by remember { mutableStateOf<String?>(null) }
+    var showFolderPickerConfirm by remember { mutableStateOf(false) }
 
-    var showSaveTemplatePrompt by remember { mutableStateOf(false) }
-    var pendingCloneAfterTemplatePrompt by remember { mutableStateOf(false) }
-    var showTemplatePickerDialog by remember { mutableStateOf(false) }
-    var dismissedSaveSignature by remember { mutableStateOf("") }
-    var suppressPickerOnce by remember { mutableStateOf(false) }
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { pickedUri: Uri? ->
+        if (pickedUri != null) {
+            val resolved = resolvePickedTreeUriToPath(pickedUri)
+            if (resolved.isNotBlank()) {
+                localSaveDir = resolved
+                saveDirError = null
+            }
+        }
+    }
 
-    val templateInteraction = remember { MutableInteractionSource() }
-    val userNameInteraction = remember { MutableInteractionSource() }
-    val userEmailInteraction = remember { MutableInteractionSource() }
-    val repoUrlInteraction = remember { MutableInteractionSource() }
-
-    val templateFocused by templateInteraction.collectIsFocusedAsState()
-    val userNameFocused by userNameInteraction.collectIsFocusedAsState()
-    val userEmailFocused by userEmailInteraction.collectIsFocusedAsState()
-    val repoUrlFocused by repoUrlInteraction.collectIsFocusedAsState()
-
-    val anyInputFocused = templateFocused || userNameFocused || userEmailFocused || repoUrlFocused
-    var prevAnyInputFocused by remember { mutableStateOf(false) }
-
-    val currentSig = "${uiState.templateName.trim()}|${uiState.gitUserName.trim()}|${uiState.gitUserEmail.trim()}|${uiState.repositoryUrl.trim()}"
-    val hasEnteredContent = uiState.gitUserName.isNotBlank() || uiState.gitUserEmail.isNotBlank() || uiState.repositoryUrl.isNotBlank()
-
-    LaunchedEffect(viewModel) {
+    LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is CloneSetupEffect.NavigateToWorkspace -> onNavigateToWorkspace(effect.repositoryPath)
@@ -440,169 +932,945 @@ fun CloneSetupRoute(
         }
     }
 
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { treeUri: Uri? ->
-        if (treeUri != null) {
-            val resolved = resolveSelectedFolderPath(context, treeUri)
-            if (resolved != null) {
-                viewModel.onTargetParentDirChanged(resolved)
-            } else {
-                Toast.makeText(
-                    context,
-                    "選択したフォルダのパスを取得できませんでした",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
-
-    val overwritePath = uiState.pendingOverwriteTargetPath
-    if (overwritePath != null) {
+    if (showFolderPickerConfirm) {
         AlertDialog(
-            onDismissRequest = viewModel::onDismissOverwriteDialog,
-            title = { Text("同名のファイル・フォルダが存在します") },
+            onDismissRequest = { showFolderPickerConfirm = false },
+            containerColor = JjcCardDark,
+            title = { Text(if (useEnglish) "Select Save Folder" else "保存先フォルダの選択", color = JjcTextPrimary) },
             text = {
                 Text(
-                    "保存先にすでに同名パスが存在します。\n\n$overwritePath\n\n既存のものを削除して書き換え（再 Clone）を行いますか？"
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = viewModel::onConfirmOverwriteClicked) {
-                    Text("書き換える")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::onDismissOverwriteDialog) {
-                    Text("キャンセル")
-                }
-            }
-        )
-    }
-
-    val proceedCloneAction: () -> Unit = {
-        val existingRepo = savedSettings.registeredRepositories.firstOrNull { repo ->
-            val folder = uiState.repositoryUrl.trim()
-                .trimEnd('/')
-                .substringAfterLast('/')
-                .substringAfterLast(':')
-                .removeSuffix(".git")
-            folder.isNotEmpty() && repo.trimEnd('/').endsWith("/")
-        }
-        if (existingRepo != null && java.io.File(existingRepo).exists()) {
-            onReopenExistingRepository(existingRepo)
-        } else {
-            viewModel.onStartCloneClicked()
-        }
-    }
-
-    if (showSaveTemplatePrompt) {
-        AlertDialog(
-            onDismissRequest = {
-                dismissedSaveSignature = currentSig
-                showSaveTemplatePrompt = false
-                pendingCloneAfterTemplatePrompt = false
-            },
-            title = { Text("テンプレートの保存") },
-            text = {
-                Text(
-                    "この入力内容をテンプレートとして保存しますか？\n\n" +
-                        "テンプレート名: ${uiState.templateName.ifBlank { "デフォルト初期設定" }}\n" +
-                        "Git ユーザー名: ${uiState.gitUserName.ifBlank { "未入力" }}\n" +
-                        "メールアドレス: ${uiState.gitUserEmail.ifBlank { "未入力" }}\n" +
-                        "リポジトリ URL: ${uiState.repositoryUrl.ifBlank { "未入力" }}"
+                    text = if (useEnglish) "Open the folder picker to choose a save directory?" else "保存先フォルダを選択しますか？",
+                    color = JjcTextSecondary,
+                    style = MaterialTheme.typography.bodySmall
                 )
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        onSaveTemplate(uiState, uiState.templateName.ifBlank { "デフォルト初期設定" })
-                        dismissedSaveSignature = currentSig
-                        val shouldStart = pendingCloneAfterTemplatePrompt
-                        pendingCloneAfterTemplatePrompt = false
-                        showSaveTemplatePrompt = false
-                        if (shouldStart) proceedCloneAction()
+                        showFolderPickerConfirm = false
+                        folderPickerLauncher.launch(null)
                     }
                 ) {
-                    Text("保存して開始")
+                    Text("はい")
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        dismissedSaveSignature = currentSig
-                        val shouldStart = pendingCloneAfterTemplatePrompt
-                        pendingCloneAfterTemplatePrompt = false
-                        showSaveTemplatePrompt = false
-                        if (shouldStart) proceedCloneAction()
-                    }
-                ) {
-                    Text("保存せず開始")
+                TextButton(onClick = { showFolderPickerConfirm = false }) {
+                    Text("いいえ", color = JjcTextSecondary)
                 }
             }
         )
     }
 
-    if (showTemplatePickerDialog && savedSettings.templates.isNotEmpty()) {
+    val overwriteTarget = uiState.pendingOverwriteTargetPath
+    if (overwriteTarget != null) {
+        AlertDialog(
+            onDismissRequest = viewModel::onDismissOverwriteDialog,
+            containerColor = JjcCardDark,
+            title = { Text(if (useEnglish) "Folder Already Exists" else "同名フォルダが存在します", color = JjcTextPrimary) },
+            text = {
+                Text(
+                    text = if (useEnglish) "A folder already exists at the destination. Delete it and clone fresh?\n\n$overwriteTarget" else "保存先にすでにフォルダが存在します。削除して新しくクローンしますか？\n\n$overwriteTarget",
+                    color = JjcTextSecondary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            confirmButton = {
+                Button(onClick = viewModel::onConfirmOverwriteClicked) {
+                    Text(if (useEnglish) "Delete & Clone" else "削除してクローン")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::onDismissOverwriteDialog) {
+                    Text(if (useEnglish) "Cancel" else "キャンセル", color = JjcTextSecondary)
+                }
+            }
+        )
+    }
+
+    Surface(modifier = Modifier.fillMaxSize(), color = JjcBgDark) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
+            JjcScreenHeader(
+                title = if (useEnglish) "Clone Repository" else context.getString(R.string.clone_title),
+                subtitle = if (useEnglish) "Specify repository URL and save path to clone" else "リポジトリ URL と保存先パスを指定してクローン",
+                useEnglish = useEnglish
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = JjcShapeMedium,
+                    colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                    border = BorderStroke(1.dp, JjcBorderDark)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        JjcInputField(
+                            value = localUrl,
+                            onValueChange = {
+                                localUrl = it
+                                urlError = null
+                            },
+                            label = if (useEnglish) "Repository URL" else "リポジトリ URL",
+                            placeholder = "https://github.com/owner/repo.git",
+                            errorMessage = urlError,
+                            enabled = !uiState.isCloning,
+                            monospace = true
+                        )
+
+                        JjcInputField(
+                            value = localSaveDir,
+                            onValueChange = {
+                                localSaveDir = it
+                                saveDirError = null
+                            },
+                            label = if (useEnglish) "Save Directory Path" else "保存先パス",
+                            placeholder = "/data/data/com.termux/files/home/repos",
+                            errorMessage = saveDirError,
+                            enabled = !uiState.isCloning,
+                            monospace = true
+                        )
+
+                        JjcSecondaryButton(
+                            text = if (useEnglish) "Choose Save Folder" else "保存先フォルダを選択",
+                            onClick = { showFolderPickerConfirm = true },
+                            enabled = !uiState.isCloning
+                        )
+                    }
+                }
+
+                JjcPrimaryButton(
+                    text = if (uiState.isCloning) { if (useEnglish) "Cloning..." else "クローン中..." } else { if (useEnglish) "Clone & Start" else context.getString(R.string.clone_start_button) },
+                    onClick = {
+                        val rawUrl = localUrl.trim()
+                        val cleanedDir = normalizeRepoPath(localSaveDir)
+                        if (rawUrl.isBlank()) {
+                            urlError = if (useEnglish) "Please enter a repository URL." else "リポジトリ URL を入力してください。"
+                            return@JjcPrimaryButton
+                        }
+                        if (cleanedDir.isBlank()) {
+                            saveDirError = if (useEnglish) "Please enter or select a save directory path." else "保存先パスを入力または選択してください。"
+                            return@JjcPrimaryButton
+                        }
+                        val normalizedUrl = if (!rawUrl.contains("://") && !rawUrl.startsWith("git@")) {
+                            "https://$rawUrl"
+                        } else {
+                            rawUrl
+                        }
+                        val inferredAuth = if (normalizedUrl.startsWith("git@") || normalizedUrl.startsWith("ssh://")) {
+                            AuthType.SSH_KEY
+                        } else {
+                            savedSettings.resolvedAuthType()
+                        }
+                        val userName = savedSettings.gitUserName.ifBlank { "jj-user" }
+                        val userEmail = savedSettings.gitUserEmail.ifBlank { "jj-user@example.com" }
+
+                        localUrl = normalizedUrl
+                        localSaveDir = cleanedDir
+                        viewModel.applyTemplate(
+                            templateName = savedSettings.templateName,
+                            userName = userName,
+                            userEmail = userEmail,
+                            repositoryUrl = normalizedUrl,
+                            parentDirectoryPath = cleanedDir,
+                            authType = inferredAuth,
+                            sshPrivateKeyPath = savedSettings.sshPrivateKeyPath
+                        )
+                        scope.launch { viewModel.onStartCloneClicked() }
+                    },
+                    enabled = !uiState.isCloning
+                )
+
+                if (uiState.progressMessage.isNotBlank()) {
+                    Text(
+                        text = uiState.progressMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = JjcAccentBlue
+                    )
+                }
+
+                if (uiState.generalError != null) {
+                    JjcErrorCard(
+                        title = if (useEnglish) "Clone Error" else "クローンエラー",
+                        message = uiState.generalError!!
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun JjLineIcon(
+    kind: String,
+    tint: Color,
+    modifier: Modifier = Modifier.size(16.dp)
+) {
+    Canvas(modifier = modifier) {
+        val stroke = Stroke(width = 1.6.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+        val w = size.width
+        val h = size.height
+        when (kind) {
+            "status" -> {
+                drawCircle(color = tint, radius = w * 0.36f, center = Offset(w * 0.5f, h * 0.5f), style = stroke)
+                drawCircle(color = tint, radius = w * 0.10f, center = Offset(w * 0.5f, h * 0.5f))
+            }
+            "refresh" -> {
+                drawArc(
+                    color = tint,
+                    startAngle = -60f,
+                    sweepAngle = 250f,
+                    useCenter = false,
+                    topLeft = Offset(w * 0.16f, h * 0.16f),
+                    size = Size(w * 0.68f, h * 0.68f),
+                    style = stroke
+                )
+                drawLine(tint, Offset(w * 0.76f, h * 0.16f), Offset(w * 0.84f, h * 0.34f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.64f, h * 0.34f), Offset(w * 0.84f, h * 0.34f), stroke.width, StrokeCap.Round)
+            }
+            "diff" -> {
+                drawLine(tint, Offset(w * 0.22f, h * 0.35f), Offset(w * 0.52f, h * 0.35f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.37f, h * 0.20f), Offset(w * 0.37f, h * 0.50f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.48f, h * 0.72f), Offset(w * 0.80f, h * 0.72f), stroke.width, StrokeCap.Round)
+            }
+            "save" -> {
+                drawRoundRect(
+                    color = tint,
+                    topLeft = Offset(w * 0.18f, h * 0.16f),
+                    size = Size(w * 0.64f, h * 0.68f),
+                    cornerRadius = CornerRadius(3f, 3f),
+                    style = stroke
+                )
+                drawRect(
+                    color = tint,
+                    topLeft = Offset(w * 0.32f, h * 0.16f),
+                    size = Size(w * 0.36f, h * 0.24f),
+                    style = stroke
+                )
+            }
+            "describe" -> {
+                drawLine(tint, Offset(w * 0.22f, h * 0.30f), Offset(w * 0.78f, h * 0.30f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.22f, h * 0.52f), Offset(w * 0.66f, h * 0.52f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.22f, h * 0.74f), Offset(w * 0.52f, h * 0.74f), stroke.width, StrokeCap.Round)
+            }
+            "new" -> {
+                drawRoundRect(
+                    color = tint,
+                    topLeft = Offset(w * 0.20f, h * 0.16f),
+                    size = Size(w * 0.60f, h * 0.68f),
+                    cornerRadius = CornerRadius(3f, 3f),
+                    style = stroke
+                )
+                drawLine(tint, Offset(w * 0.50f, h * 0.34f), Offset(w * 0.50f, h * 0.66f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.34f, h * 0.50f), Offset(w * 0.66f, h * 0.50f), stroke.width, StrokeCap.Round)
+            }
+            "fetch" -> {
+                drawLine(tint, Offset(w * 0.50f, h * 0.18f), Offset(w * 0.50f, h * 0.68f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.32f, h * 0.50f), Offset(w * 0.50f, h * 0.68f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.68f, h * 0.50f), Offset(w * 0.50f, h * 0.68f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.22f, h * 0.84f), Offset(w * 0.78f, h * 0.84f), stroke.width, StrokeCap.Round)
+            }
+            "push" -> {
+                drawLine(tint, Offset(w * 0.50f, h * 0.68f), Offset(w * 0.50f, h * 0.18f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.32f, h * 0.36f), Offset(w * 0.50f, h * 0.18f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.68f, h * 0.36f), Offset(w * 0.50f, h * 0.18f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.22f, h * 0.84f), Offset(w * 0.78f, h * 0.84f), stroke.width, StrokeCap.Round)
+            }
+            "bookmark" -> {
+                drawCircle(color = tint, radius = w * 0.12f, center = Offset(w * 0.34f, h * 0.24f), style = stroke)
+                drawCircle(color = tint, radius = w * 0.12f, center = Offset(w * 0.34f, h * 0.76f), style = stroke)
+                drawCircle(color = tint, radius = w * 0.12f, center = Offset(w * 0.70f, h * 0.38f), style = stroke)
+                drawLine(tint, Offset(w * 0.34f, h * 0.36f), Offset(w * 0.34f, h * 0.64f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.34f, h * 0.52f), Offset(w * 0.70f, h * 0.48f), stroke.width, StrokeCap.Round)
+            }
+            else -> {
+                drawArc(
+                    color = tint,
+                    startAngle = -140f,
+                    sweepAngle = 240f,
+                    useCenter = false,
+                    topLeft = Offset(w * 0.20f, h * 0.24f),
+                    size = Size(w * 0.62f, h * 0.60f),
+                    style = stroke
+                )
+                drawLine(tint, Offset(w * 0.20f, h * 0.24f), Offset(w * 0.38f, h * 0.22f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.20f, h * 0.24f), Offset(w * 0.22f, h * 0.42f), stroke.width, StrokeCap.Round)
+            }
+        }
+    }
+}
+
+@Composable
+private fun JjActionGridButton(
+    title: String,
+    commandHint: String,
+    iconKind: String,
+    primary: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val bgColor = when {
+        primary && enabled -> JjcAccentBlue
+        primary && !enabled -> JjcAccentBlue.copy(alpha = 0.45f)
+        else -> JjcCardDark
+    }
+    val fgColor = when {
+        primary -> JjcAccentTextDark
+        enabled -> JjcTextPrimary
+        else -> JjcTextSecondary.copy(alpha = 0.6f)
+    }
+    val subColor = when {
+        primary -> JjcAccentTextDark.copy(alpha = 0.82f)
+        enabled -> JjcTextSecondary
+        else -> JjcTextSecondary.copy(alpha = 0.5f)
+    }
+    val borderColor = if (primary) JjcAccentBlue else JjcBorderDark
+
+    Surface(
+        modifier = modifier
+            .height(54.dp)
+            .clip(JjcShapeMedium)
+            .border(1.dp, borderColor, JjcShapeMedium)
+            .clickable(enabled = enabled, onClick = onClick),
+        color = bgColor,
+        shape = JjcShapeMedium
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start
+        ) {
+            JjLineIcon(
+                kind = iconKind,
+                tint = fgColor,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = title,
+                    color = fgColor,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = commandHint,
+                    color = subColor,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun InitialSettingsRoute(
+    savedSettings: SavedAppSettings,
+    isOnboarding: Boolean = false,
+    selectedLanguage: AppLanguage = AppLanguage.SYSTEM,
+    onSelectLanguage: (AppLanguage) -> Unit = {},
+    onSaveSettings: (userName: String, userEmail: String, parentDir: String, authType: AuthType, sshKeyPath: String) -> Unit,
+    onBack: () -> Unit
+) {
+    var userName by remember(savedSettings) { mutableStateOf(savedSettings.gitUserName) }
+    var userEmail by remember(savedSettings) { mutableStateOf(savedSettings.gitUserEmail) }
+    val defaultSavePath = remember(savedSettings) {
+        savedSettings.parentDirectoryPath.ifBlank { "/data/data/com.termux/files/home/repos" }
+    }
+    var authType by remember(savedSettings) { mutableStateOf(savedSettings.resolvedAuthType()) }
+    var sshKeyPath by remember(savedSettings) { mutableStateOf(savedSettings.sshPrivateKeyPath) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
+    val useEnglish = resolveUseEnglish(selectedLanguage)
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = JjcBgDark
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
+            JjcScreenHeader(
+                title = if (useEnglish) {
+                    if (isOnboarding) "Initial Setup" else "Initial Settings"
+                } else {
+                    if (useEnglish) { if (isOnboarding) "Initial Setup" else "Initial Settings" } else { if (isOnboarding) "初期設定（初回セットアップ）" else "初期設定" }
+                },
+                subtitle = if (useEnglish) {
+                    if (isOnboarding) {
+                        "Configure Git / Jujutsu author info and auth method"
+                    } else {
+                        "Git / Jujutsu author info and auth settings"
+                    }
+                } else {
+                    if (isOnboarding) {
+                        if (useEnglish) "Configure Git / Jujutsu author info and auth method" else "Git / Jujutsu の作成者情報と認証方式を設定してください"
+                    } else {
+                        if (useEnglish) "Git / Jujutsu author info and auth settings" else "Git / Jujutsu 作成者情報と認証設定"
+                    }
+                },
+                trailing = if (!isOnboarding) {
+                    {
+                        OutlinedButton(
+                            onClick = onBack,
+                            shape = JjcShapeSmall,
+                            border = BorderStroke(1.dp, JjcBorderDark)
+                        ) {
+                            Text(if (useEnglish) "Back" else "戻る", color = JjcTextPrimary)
+                        }
+                    }
+                } else {
+                    null
+                }
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = JjcShapeMedium,
+                    colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                    border = BorderStroke(1.dp, JjcBorderDark)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = if (useEnglish) "Display Language" else "表示言語",
+                            color = JjcTextPrimary,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            AppLanguage.entries.forEach { langOption ->
+                                val chipText = if (useEnglish) langOption.labelEn else langOption.labelJa
+                                FilterChip(
+                                    selected = selectedLanguage == langOption,
+                                    onClick = { onSelectLanguage(langOption) },
+                                    shape = JjcShapeSmall,
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        containerColor = JjcCardDark,
+                                        labelColor = JjcTextPrimary,
+                                        selectedContainerColor = Color(0xFF133347),
+                                        selectedLabelColor = JjcAccentBlue
+                                    ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = selectedLanguage == langOption,
+                                        borderColor = JjcBorderDark,
+                                        selectedBorderColor = JjcAccentBlue
+                                    ),
+                                    label = { Text(chipText, maxLines = 1, softWrap = false) }
+                                )
+                            }
+                        }
+                        HorizontalDivider(color = JjcBorderDark, thickness = 1.dp)
+                                                Text(
+                            text = if (useEnglish) "Author Info" else "作成者情報",
+                            color = JjcTextPrimary,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        JjcInputField(
+                            value = userName,
+                            onValueChange = {
+                                userName = it
+                                errorMsg = null
+                            },
+                            label = if (useEnglish) "Git User Name" else "Git ユーザー名",
+                            placeholder = if (useEnglish) "e.g. jj-user" else "例: jj-user"
+                        )
+
+                        JjcInputField(
+                            value = userEmail,
+                            onValueChange = {
+                                userEmail = it
+                                errorMsg = null
+                            },
+                            label = if (useEnglish) "Git Email" else "Git メールアドレス",
+                            placeholder = if (useEnglish) "e.g. jj-user@example.com" else "例: jj-user@example.com"
+                        )
+
+                        JjcAuthTypeSelector(
+                            selected = authType,
+                            onSelect = { authType = it }
+                        )
+
+                        if (authType == AuthType.SSH_KEY) {
+                            JjcInputField(
+                                value = sshKeyPath,
+                                onValueChange = { sshKeyPath = it },
+                                label = if (useEnglish) "SSH Private Key Path" else "SSH 秘密鍵パス",
+                                placeholder = "/data/data/com.termux/files/home/.ssh/id_ed25519",
+                                monospace = true
+                            )
+                        }
+                    }
+                }
+
+                if (errorMsg != null) {
+                    JjcErrorCard(
+                        title = if (useEnglish) "Input Error" else "入力エラー",
+                        message = errorMsg!!
+                    )
+                }
+
+                JjcPrimaryButton(
+                    text = if (useEnglish) {
+                        if (isOnboarding) "Save & Continue" else "Save Settings"
+                    } else {
+                        if (useEnglish) { if (isOnboarding) "Save & Continue" else "Save Settings" } else { if (isOnboarding) "初期設定を保存して次へ" else "初期設定を保存" }
+                    },
+                    onClick = {
+                        val trimmedName = userName.trim()
+                        val trimmedEmail = userEmail.trim()
+                        if (trimmedName.isBlank() || trimmedEmail.isBlank()) {
+                            errorMsg = if (useEnglish) {
+                                "Please enter both Git user name and email."
+                            } else {
+                                if (useEnglish) "Please enter both Git user name and email." else "Git ユーザー名とメールアドレスを入力してください。"
+                            }
+                        } else {
+                            onSaveSettings(trimmedName, trimmedEmail, defaultSavePath, authType, sshKeyPath.trim())
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+private fun normalizeRepoPath(raw: String): String {
+    return raw.lines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .joinToString("/")
+        .replace(Regex("/+"), "/")
+        .trimEnd('/')
+}
+
+private fun isSafeRepositoryDeletionPath(path: String): Boolean {
+    val cleaned = normalizeRepoPath(path)
+    if (cleaned.isEmpty()) return false
+    val forbidden = setOf(
+        "/",
+        "/data",
+        "/data/data",
+        "/data/data/com.termux",
+        "/data/data/com.termux/files",
+        "/data/data/com.termux/files/home",
+        "/data/data/com.termux/files/home/repos",
+        "/data/data/com.termux/files/usr",
+        "/storage",
+        "/storage/emulated",
+        "/storage/emulated/0"
+    )
+    if (cleaned in forbidden) return false
+    return cleaned.length >= 12 && cleaned.contains("/")
+}
+
+private fun resolvePickedTreeUriToPath(uri: Uri): String {
+    val decoded = Uri.decode(uri.toString())
+    val treePart = decoded.substringAfter("/tree/", missingDelimiterValue = "").substringBefore("?")
+    if (treePart.isNotBlank()) {
+        if (treePart.startsWith("data/")) {
+            return normalizeRepoPath("/$treePart")
+        }
+        if (treePart.startsWith("/data/")) {
+            return normalizeRepoPath(treePart)
+        }
+        if (treePart.startsWith("primary:")) {
+            val rel = treePart.removePrefix("primary:").trim('/')
+            return if (rel.isBlank()) "/storage/emulated/0" else normalizeRepoPath("/storage/emulated/0/$rel")
+        }
+        if (treePart.contains(":")) {
+            val vol = treePart.substringBefore(":")
+            val rel = treePart.substringAfter(":").trim('/')
+            if (vol.equals("home", ignoreCase = true)) {
+                return if (rel.isBlank()) "/storage/emulated/0/Documents" else normalizeRepoPath("/storage/emulated/0/Documents/$rel")
+            }
+            return if (rel.isBlank()) "/storage/$vol" else normalizeRepoPath("/storage/$vol/$rel")
+        }
+    }
+    if (decoded.startsWith("content:/") && !decoded.startsWith("content://")) {
+        val afterTree = decoded.substringAfter("tree/", missingDelimiterValue = "")
+        if (afterTree.isNotBlank()) {
+            return normalizeRepoPath("/$afterTree")
+        }
+    }
+    return normalizeRepoPath(decoded)
+}
+
+@Composable
+fun RepositorySelectorRoute(
+    currentRepoPath: String,
+    prefsRepository: AppPreferencesRepository,
+    jjRepository: JjRepository,
+    useEnglish: Boolean = java.util.Locale.getDefault().language != "ja",
+    onSelectRepository: (String) -> Unit,
+    onBackToWorkspace: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val commandClient = remember(context) { TermuxCommandClient(context) }
+    val cloneRepository = remember(commandClient) { GitCloneRepository(commandClient) }
+    val scope = rememberCoroutineScope()
+    var settings by remember { mutableStateOf(prefsRepository.loadSettings()) }
+    val normalizedCurrent = normalizeRepoPath(currentRepoPath)
+    var selectedPath by remember(normalizedCurrent) { mutableStateOf(normalizedCurrent) }
+    var statusBanner by remember { mutableStateOf<String?>(null) }
+
+    var showRepoManagerDialog by remember { mutableStateOf(false) }
+    var cloneUrlInput by remember { mutableStateOf("") }
+    var cloneSavePathInput by remember(settings.parentDirectoryPath) { mutableStateOf(settings.parentDirectoryPath.ifBlank { "/data/data/com.termux/files/home/repos" }) }
+    var showFolderPickerWarning by remember { mutableStateOf(false) }
+    var isCloningInDialog by remember { mutableStateOf(false) }
+    var clonePhaseMessage by remember { mutableStateOf("") }
+    var dialogMessage by remember { mutableStateOf<String?>(null) }
+    var pendingDeleteRepo by remember { mutableStateOf<String?>(null) }
+    var isProcessingDelete by remember { mutableStateOf(false) }
+
+    val openDocumentTreeLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { pickedUri: Uri? ->
+        if (pickedUri != null) {
+            val resolved = resolvePickedTreeUriToPath(pickedUri)
+            if (resolved.isNotBlank()) {
+                cloneSavePathInput = resolved
+                dialogMessage = null
+            }
+        }
+    }
+
+    val repos = remember(settings, selectedPath, normalizedCurrent) {
+        buildList {
+            if (normalizedCurrent.isNotBlank()) add(normalizedCurrent)
+            if (selectedPath.isNotBlank()) add(selectedPath)
+            settings.registeredRepositories.forEach { raw ->
+                val cleaned = normalizeRepoPath(raw)
+                if (cleaned.isNotBlank()) add(cleaned)
+            }
+        }.distinct().filter {
+            it != "/data/data/com.termux/files/home/repos" && !it.startsWith("content:")
+        }
+    }
+
+    fun applyRemoveFromList(targetRepo: String) {
+        prefsRepository.removeRepository(targetRepo)
+        settings = prefsRepository.loadSettings()
+        if (selectedPath == targetRepo) {
+            selectedPath = normalizeRepoPath(settings.activeRepositoryPath.orEmpty())
+                .ifBlank { repos.firstOrNull { it != targetRepo } ?: "" }
+        }
+    }
+
+    if (showFolderPickerWarning) {
+        AlertDialog(
+            onDismissRequest = { showFolderPickerWarning = false },
+            containerColor = JjcCardDark,
+            title = { Text(if (useEnglish) "Select Save Folder" else "保存先フォルダの選択", color = JjcTextPrimary) },
+            text = {
+                Text(
+                    text = "端末のファイル一覧（フォルダ選択画面）から保存先を選択しますか？",
+                    color = JjcTextSecondary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showFolderPickerWarning = false
+                        openDocumentTreeLauncher.launch(null)
+                    }
+                ) {
+                    Text("はい")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showFolderPickerWarning = false }
+                ) {
+                    Text("いいえ", color = JjcTextSecondary)
+                }
+            }
+        )
+    }
+
+    if (pendingDeleteRepo != null) {
+        val targetRepo = pendingDeleteRepo!!
+        AlertDialog(
+            onDismissRequest = { if (!isProcessingDelete) pendingDeleteRepo = null },
+            containerColor = JjcCardDark,
+            title = { Text("リポジトリの除外確認", color = JjcTextPrimary) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "一覧から除外しますか？実フォルダの削除有無も選択できます。",
+                        color = JjcTextSecondary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = targetRepo,
+                        color = JjcTextPrimary,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = !isProcessingDelete,
+                    onClick = {
+                        if (!isSafeRepositoryDeletionPath(targetRepo)) {
+                            pendingDeleteRepo = null
+                            showRepoManagerDialog = false
+                            statusBanner = "安全のためこのパスの実フォルダ削除はブロックされました: $targetRepo"
+                            return@Button
+                        }
+                        scope.launch {
+                            isProcessingDelete = true
+                            val rmResult = commandClient.execute(
+                                executablePath = "${TermuxCommandClient.TERMUX_BIN_PREFIX}/rm",
+                                arguments = arrayOf("-rf", targetRepo),
+                                timeoutMillis = 20_000L
+                            )
+                            val fallbackDeleted = if (rmResult.isFailure) {
+                                runCatching { File(targetRepo).deleteRecursively() }.getOrDefault(false)
+                            } else {
+                                true
+                            }
+                            applyRemoveFromList(targetRepo)
+                            isProcessingDelete = false
+                            pendingDeleteRepo = null
+                            showRepoManagerDialog = false
+                            statusBanner = if (rmResult.isSuccess || fallbackDeleted) {
+                                "一覧から除外し、実フォルダも削除しました: $targetRepo"
+                            } else {
+                                "一覧から除外しましたが、実フォルダ削除に失敗しました: ${rmResult.exceptionOrNull()?.message ?: targetRepo}"
+                            }
+                        }
+                    }
+                ) {
+                    Text(if (isProcessingDelete) "削除中..." else "実フォルダも削除")
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        enabled = !isProcessingDelete,
+                        onClick = {
+                            applyRemoveFromList(targetRepo)
+                            pendingDeleteRepo = null
+                            showRepoManagerDialog = false
+                            statusBanner = "一覧から除外しました（実フォルダは保持されます）: $targetRepo"
+                        }
+                    ) {
+                        Text("除外のみ", color = JjcTextPrimary)
+                    }
+                    TextButton(
+                        enabled = !isProcessingDelete,
+                        onClick = { pendingDeleteRepo = null }
+                    ) {
+                        Text("キャンセル", color = JjcTextSecondary)
+                    }
+                }
+            }
+        )
+    }
+
+    if (showRepoManagerDialog) {
         AlertDialog(
             onDismissRequest = {
-                suppressPickerOnce = true
-                showTemplatePickerDialog = false
+                if (!isProcessingDelete && !isCloningInDialog) {
+                    showRepoManagerDialog = false
+                    dialogMessage = null
+                }
             },
-            title = { Text("保存されたテンプレートでログイン") },
+            containerColor = JjcCardDark,
+            title = { Text("Repo登録・管理", color = JjcTextPrimary) },
             text = {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = "タップすると入力欄に反映されます（開始はしません）。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    JjcInputField(
+                        value = cloneUrlInput,
+                        onValueChange = {
+                            cloneUrlInput = it
+                            dialogMessage = null
+                        },
+                        label = "クローンするリポジトリ (URL)",
+                        placeholder = "https://github.com/owner/repo.git",
+                        enabled = !isCloningInDialog
                     )
-                    savedSettings.templates.forEach { tpl ->
-                        OutlinedButton(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = {
-                                suppressPickerOnce = true
-                                showTemplatePickerDialog = false
-                                viewModel.applyTemplate(
-                                    templateName = tpl.templateName,
-                                    userName = tpl.gitUserName,
-                                    userEmail = tpl.gitUserEmail,
-                                    repositoryUrl = tpl.repositoryUrl,
-                                    parentDirectoryPath = tpl.parentDirectoryPath,
-                                    authType = tpl.resolvedAuthType(),
-                                    sshPrivateKeyPath = tpl.sshPrivateKeyPath
+
+                    JjcInputField(
+                        value = cloneSavePathInput,
+                        onValueChange = {
+                            cloneSavePathInput = it
+                            dialogMessage = null
+                        },
+                        label = if (useEnglish) "Save Directory Path" else "保存先パス",
+                        placeholder = "/data/data/com.termux/files/home/repos",
+                        enabled = !isCloningInDialog,
+                        monospace = true
+                    )
+
+                    OutlinedButton(
+                        onClick = {
+                            dialogMessage = null
+                            showFolderPickerWarning = true
+                        },
+                        enabled = !isCloningInDialog,
+                        shape = JjcShapeSmall,
+                        border = BorderStroke(1.dp, JjcBorderDark),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("フォルダ選択画面から指定", color = JjcTextPrimary)
+                    }
+
+                    if (normalizeRepoPath(cloneSavePathInput).startsWith("/storage/")) {
+                        JjcErrorText(
+                            message = if (useEnglish) "Paths under /storage/ may fail with jj file-lock errors (os error 38). Termux /data/data/com.termux/files/home/repos is recommended." else "/storage/ 配下は jj のファイルロック非対応（os error 38）になる場合があります。Termux の /data/data/com.termux/files/home/repos を推奨します。",
+                            useEnglish = useEnglish
+                        )
+                    }
+
+                    if (isCloningInDialog && clonePhaseMessage.isNotBlank()) {
+                        Text(
+                            text = clonePhaseMessage,
+                            color = JjcAccentBlue,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    JjcPrimaryButton(
+                        text = if (isCloningInDialog) "クローン中..." else "クローンして登録 (jj git clone)",
+                        enabled = !isCloningInDialog && !isProcessingDelete,
+                        onClick = {
+                            val trimmedUrl = cloneUrlInput.trim()
+                            val trimmedParent = normalizeRepoPath(cloneSavePathInput)
+                            if (trimmedUrl.isBlank()) {
+                                dialogMessage = "クローンするリポジトリ (URL) を入力してください。"
+                                return@JjcPrimaryButton
+                            }
+                            if (trimmedParent.isBlank()) {
+                                dialogMessage = "保存先パスを選択してください。"
+                                return@JjcPrimaryButton
+                            }
+                            val inferredAuth = if (trimmedUrl.startsWith("git@") || trimmedUrl.startsWith("ssh://")) {
+                                AuthType.SSH_KEY
+                            } else {
+                                AuthType.HTTPS
+                            }
+                            val latestSettings = prefsRepository.loadSettings()
+                            val userName = latestSettings.gitUserName.ifBlank { "jj-user" }
+                            val userEmail = latestSettings.gitUserEmail.ifBlank { "jj-user@example.com" }
+
+                            scope.launch {
+                                isCloningInDialog = true
+                                clonePhaseMessage = "jj git clone を実行中..."
+                                dialogMessage = null
+                                val result = cloneRepository.cloneAndConfigure(
+                                    params = CloneParams(
+                                        gitUserName = userName,
+                                        gitUserEmail = userEmail,
+                                        repositoryUrl = trimmedUrl,
+                                        parentDirectoryPath = trimmedParent,
+                                        authType = inferredAuth,
+                                        sshPrivateKeyPath = latestSettings.sshPrivateKeyPath.ifBlank { null },
+                                        overwriteExisting = false
+                                    ),
+                                    onPhaseChanged = { phase ->
+                                        clonePhaseMessage = phase
+                                    },
+                                        useEnglish = useEnglish
+                                    )
+                                isCloningInDialog = false
+                                clonePhaseMessage = ""
+                                result.fold(
+                                    onSuccess = { clonedPath ->
+                                        val normCloned = normalizeRepoPath(clonedPath)
+                                        prefsRepository.registerRepositoryPath(normCloned)
+                                        settings = prefsRepository.loadSettings()
+                                        selectedPath = normCloned
+                                        cloneUrlInput = ""
+                                        showRepoManagerDialog = false
+                                        statusBanner = "クローンして登録しました: $normCloned"
+                                    },
+                                    onFailure = { err ->
+                                        dialogMessage = err.message ?: "リポジトリのクローンに失敗しました。"
+                                    }
                                 )
                             }
-                        ) {
-                            Column(
+                        }
+                    )
+
+                    if (dialogMessage != null) {
+                        JjcErrorText(message = dialogMessage!!)
+                    }
+
+                    if (repos.isNotEmpty()) {
+                        Text(
+                            text = "登録済みリポジトリ",
+                            color = JjcTextPrimary,
+                            style = MaterialTheme.typography.titleSmall
+                        )
+
+                        repos.forEach { repo ->
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.Start
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = tpl.templateName,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                                Text(
-                                    text = "${tpl.gitUserName.ifBlank { "-" }} <${tpl.gitUserEmail.ifBlank { "-" }}>",
+                                    text = repo,
+                                    color = JjcTextSecondary,
                                     style = MaterialTheme.typography.bodySmall,
-                                    maxLines = 1,
-                                    softWrap = false
+                                    fontFamily = FontFamily.Monospace,
+                                    modifier = Modifier.weight(1f)
                                 )
-                                if (tpl.repositoryUrl.isNotBlank()) {
-                                    Text(
-                                        text = tpl.repositoryUrl,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontFamily = FontFamily.Monospace,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
+                                TextButton(
+                                    enabled = !isProcessingDelete && !isCloningInDialog && repos.size > 1,
+                                    onClick = { pendingDeleteRepo = repo }
+                                ) {
+                                    Text("削除", color = JjcErrorText)
                                 }
                             }
                         }
@@ -611,263 +1879,124 @@ fun CloneSetupRoute(
             },
             confirmButton = {
                 TextButton(
+                    enabled = !isCloningInDialog && !isProcessingDelete,
                     onClick = {
-                        suppressPickerOnce = true
-                        showTemplatePickerDialog = false
+                        showRepoManagerDialog = false
+                        dialogMessage = null
                     }
                 ) {
-                    Text("このまま入力")
+                    Text(if (useEnglish) "Close" else "閉じる", color = JjcAccentBlue)
                 }
             }
         )
     }
 
-    val scrollState = rememberScrollState()
-    val openTemplateListOnTap: () -> Unit = {
-        if (savedSettings.templates.isNotEmpty() && !suppressPickerOnce && !uiState.isCloning) {
-            showTemplatePickerDialog = true
-        }
-    }
-
-    LaunchedEffect(
-        templateInteraction,
-        userNameInteraction,
-        userEmailInteraction,
-        repoUrlInteraction,
-        savedSettings.templates.size,
-        uiState.isCloning
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = JjcBgDark
     ) {
-        val sources = listOf(
-            templateInteraction,
-            userNameInteraction,
-            userEmailInteraction,
-            repoUrlInteraction
-        )
-        sources.forEach { source ->
-            launch {
-                source.interactions.collect { interaction ->
-                    when (interaction) {
-                        is FocusInteraction.Focus -> {
-                            openTemplateListOnTap()
-                        }
-                        is FocusInteraction.Unfocus -> {
-                            suppressPickerOnce = false
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    Surface(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
         ) {
-            Surface(
-                tonalElevation = 3.dp,
-                shadowElevation = 2.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = context.getString(R.string.clone_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        softWrap = false
-                    )
+            JjcScreenHeader(
+                title = "Jujutsu Controller",
+                subtitle = if (useEnglish) "Android Edition · Select a repository (jj)" else "Android Edition · リポジトリ切替 (jj)",
+                useEnglish = useEnglish,
+                trailing = {
+                    OutlinedButton(
+                        onClick = {
+                            val target = selectedPath.ifBlank { normalizedCurrent }
+                            onBackToWorkspace(target)
+                        },
+                        shape = JjcShapeSmall,
+                        border = BorderStroke(1.dp, JjcBorderDark)
+                    ) {
+                        Text(if (useEnglish) "Back" else "戻る", color = JjcTextPrimary)
+                    }
                 }
-            }
+            )
 
             Column(
                 modifier = Modifier
-                    .weight(1f)
                     .fillMaxWidth()
-                    .verticalScroll(scrollState)
-                    .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 36.dp),
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = context.getString(R.string.clone_subtitle),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                OutlinedTextField(
-                    value = uiState.templateName,
-                    onValueChange = { newValue ->
-                        suppressPickerOnce = false
-                        viewModel.onTemplateNameChanged(newValue)
-                    },
-                    label = { Text("テンプレート名") },
-                    placeholder = { Text("例: メイン開発用") },
-                    enabled = !uiState.isCloning,
-                    singleLine = true,
-                    interactionSource = templateInteraction,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = uiState.gitUserName,
-                    onValueChange = { newValue ->
-                        suppressPickerOnce = false
-                        viewModel.onUserNameChanged(newValue)
-                    },
-                    label = { Text(context.getString(R.string.clone_label_user_name)) },
-                    placeholder = { Text(context.getString(R.string.clone_hint_user_name)) },
-                    isError = uiState.userNameError != null,
-                    supportingText = uiState.userNameError?.let { msg -> { Text(msg) } },
-                    enabled = !uiState.isCloning,
-                    singleLine = true,
-                    interactionSource = userNameInteraction,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = uiState.gitUserEmail,
-                    onValueChange = { newValue ->
-                        suppressPickerOnce = false
-                        viewModel.onUserEmailChanged(newValue)
-                    },
-                    label = { Text(context.getString(R.string.clone_label_user_email)) },
-                    placeholder = { Text(context.getString(R.string.clone_hint_user_email)) },
-                    isError = uiState.userEmailError != null,
-                    supportingText = uiState.userEmailError?.let { msg -> { Text(msg) } },
-                    enabled = !uiState.isCloning,
-                    singleLine = true,
-                    interactionSource = userEmailInteraction,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = uiState.repositoryUrl,
-                    onValueChange = { newValue ->
-                        suppressPickerOnce = false
-                        viewModel.onRepositoryUrlChanged(newValue)
-                    },
-                    label = { Text(context.getString(R.string.clone_label_repo_url)) },
-                    placeholder = { Text(context.getString(R.string.clone_hint_repo_url)) },
-                    isError = uiState.repoUrlError != null,
-                    supportingText = uiState.repoUrlError?.let { msg -> { Text(msg) } },
-                    enabled = !uiState.isCloning,
-                    singleLine = true,
-                    interactionSource = repoUrlInteraction,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = uiState.authType == AuthType.HTTPS,
-                        onClick = { viewModel.onAuthTypeChanged(AuthType.HTTPS) },
-                        enabled = !uiState.isCloning,
-                        label = { Text(context.getString(R.string.clone_auth_https)) }
-                    )
-                    FilterChip(
-                        selected = uiState.authType == AuthType.SSH_KEY,
-                        onClick = { viewModel.onAuthTypeChanged(AuthType.SSH_KEY) },
-                        enabled = !uiState.isCloning,
-                        label = { Text(context.getString(R.string.clone_auth_ssh)) }
-                    )
-                }
-
-                if (uiState.authType == AuthType.SSH_KEY) {
-                    OutlinedTextField(
-                        value = uiState.sshPrivateKeyPath,
-                        onValueChange = viewModel::onSshKeyPathChanged,
-                        label = { Text(context.getString(R.string.clone_label_ssh_key_path)) },
-                        enabled = !uiState.isCloning,
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                OutlinedTextField(
-                    value = uiState.targetParentDir,
-                    onValueChange = viewModel::onTargetParentDirChanged,
-                    label = { Text(context.getString(R.string.clone_label_parent_dir)) },
-                    isError = uiState.targetDirError != null,
-                    supportingText = uiState.targetDirError?.let { msg -> { Text(msg) } },
-                    enabled = !uiState.isCloning,
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedButton(
-                    onClick = { folderPickerLauncher.launch(null) },
-                    enabled = !uiState.isCloning,
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(context.getString(R.string.clone_choose_folder))
+                    Text(
+                        text = if (useEnglish) "Select a repository" else "管理対象のリポジトリを選択",
+                        color = JjcTextPrimary,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    TextButton(
+                        onClick = {
+                            dialogMessage = null
+                            showRepoManagerDialog = true
+                        }
+                    ) {
+                        Text(if (useEnglish) "Add Repo" else "Repo登録", color = JjcAccentBlue)
+                    }
                 }
 
-                if (uiState.isCloning) {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                if (statusBanner != null) {
+                    Text(
+                        text = statusBanner!!,
+                        color = JjcTextSecondary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                repos.forEach { repo ->
+                    val isSelected = repo == selectedPath
+                    val repoTitle = repo.substringAfterLast('/').ifEmpty { repo }
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selectedPath = repo
+                                prefsRepository.setActiveRepository(repo)
+                                scope.launch {
+                                    runCatching { jjRepository.loadCommitHistory(repo) }
+                                    onSelectRepository(repo)
+                                }
+                            },
+                        shape = JjcShapeMedium,
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected) Color(0xFF172334) else JjcCardDark
+                        ),
+                        border = BorderStroke(
+                            width = if (isSelected) 1.5.dp else 1.dp,
+                            color = if (isSelected) JjcAccentBlue else JjcBorderDark
+                        )
+                    ) {
                         Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(uiState.progressMessage)
-                            }
-                            OutlinedButton(
-                                onClick = viewModel::onCancelCloneClicked,
-                                enabled = !uiState.isCancelling,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    if (uiState.isCancelling) {
-                                        context.getString(R.string.clone_cancelling)
-                                    } else {
-                                        context.getString(R.string.clone_cancel_button)
-                                    }
-                                )
-                            }
+                            Text(
+                                text = if (isSelected) "> $repoTitle" else repoTitle,
+                                color = JjcTextPrimary,
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                text = repo,
+                                color = JjcTextSecondary,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace
+                            )
                         }
                     }
-                } else {
-                    Button(
-                        onClick = {
-                            val alreadySaved = savedSettings.templates.any { tpl ->
-                                tpl.templateName.trim() == uiState.templateName.trim() &&
-                                    tpl.gitUserName.trim() == uiState.gitUserName.trim() &&
-                                    tpl.gitUserEmail.trim() == uiState.gitUserEmail.trim() &&
-                                    tpl.repositoryUrl.trim() == uiState.repositoryUrl.trim()
-                            }
-                            val hasAnyInput = uiState.templateName.isNotBlank() ||
-                                uiState.gitUserName.isNotBlank() ||
-                                uiState.gitUserEmail.isNotBlank() ||
-                                uiState.repositoryUrl.isNotBlank()
-                            if (hasAnyInput && !alreadySaved) {
-                                pendingCloneAfterTemplatePrompt = true
-                                showSaveTemplatePrompt = true
-                            } else {
-                                proceedCloneAction()
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(context.getString(R.string.clone_start_button))
-                    }
-                }
-
-                if (uiState.generalError != null) {
-                    Text(
-                        text = uiState.generalError!!,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
                 }
             }
         }
@@ -877,841 +2006,680 @@ fun CloneSetupRoute(
 @Composable
 fun WorkspaceScreen(
     repoPath: String,
-    cloneRepository: GitCloneRepository,
     jjRepository: JjRepository,
-    onOpenNewClone: () -> Unit,
-    onEditRepository: (oldRepoPath: String, newRepoPath: String, newRepoUrl: String, newParentDir: String) -> Unit = { _, _, _, _ -> }
+    useEnglish: Boolean = java.util.Locale.getDefault().language != "ja",
+    onOpenRepositorySelector: () -> Unit,
+    onOpenInitialSettings: () -> Unit
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
     val lifecycleOwner = LocalLifecycleOwner.current
-    var wasPaused by remember(repoPath) { mutableStateOf(false) }
 
-    var statusOutput by remember(repoPath) {
-        mutableStateOf(context.getString(R.string.workspace_loading_status))
+    var isBusy by remember { mutableStateOf(false) }
+    var statusOutput by remember { mutableStateOf<JjCommandOutput?>(null) }
+    var logText by remember { mutableStateOf<String?>(null) }
+    var logErrorText by remember { mutableStateOf<String?>(null) }
+    var selectedLogDetail by remember { mutableStateOf<String?>(null) }
+    var inputDialogMode by remember { mutableStateOf<JjActionType?>(null) }
+    var inputText by remember { mutableStateOf("") }
+
+    val repoName = remember(repoPath) {
+        repoPath.trimEnd('/').substringAfterLast('/').ifEmpty { repoPath }
     }
-    var reloadTrigger by remember(repoPath) { mutableStateOf(0) }
-    var isRunningAction by remember(repoPath) { mutableStateOf(false) }
-    var historyTrigger by remember(repoPath) { mutableStateOf(0) }
 
-    var repoFiles by remember(repoPath) { mutableStateOf<List<String>>(emptyList()) }
-    var filesTrigger by remember(repoPath) { mutableStateOf(0) }
+    fun refreshJjState() {
+        if (repoPath.isBlank()) return
+        scope.launch {
+            isBusy = true
+            statusOutput = runCatching {
+                jjRepository.runAction(repoPath = repoPath, action = JjActionType.STATUS)
+            }.getOrElse { err ->
+                JjCommandOutput(
+                    action = JjActionType.STATUS,
+                    commandSummary = "jj status",
+                    output = err.message ?: if (useEnglish) "Failed to load status." else "状態取得に失敗しました。",
+                    isError = true
+                )
+            }
+
+            val historyResult = runCatching { jjRepository.loadCommitHistory(repoPath) }
+                .getOrElse { Result.failure(it) }
+            historyResult.fold(
+                onSuccess = { text ->
+                    logText = text
+                    logErrorText = null
+                },
+                onFailure = { err ->
+                    logErrorText = err.message ?: if (useEnglish) "Failed to load commit log." else "履歴取得に失敗しました。"
+                }
+            )
+            isBusy = false
+        }
+    }
+
+    fun executeJjAction(action: JjActionType, argument: String = "") {
+        if (repoPath.isBlank()) return
+        scope.launch {
+            isBusy = true
+            val result = runCatching {
+                jjRepository.runAction(
+                    repoPath = repoPath,
+                    action = action,
+                    inputValue = argument.ifBlank { null }
+                )
+            }.getOrElse { err ->
+                JjCommandOutput(
+                    action = action,
+                    commandSummary = action.label,
+                    output = err.message ?: if (useEnglish) "Command execution error" else "コマンド実行エラー",
+                    isError = true
+                )
+            }
+
+            if (action == JjActionType.LOG) {
+                if (result.isError) {
+                    logErrorText = result.output
+                } else {
+                    logText = result.output
+                    logErrorText = null
+                }
+            } else {
+                statusOutput = result
+                if (!result.isError && action != JjActionType.STATUS && action != JjActionType.DIFF) {
+                    runCatching { jjRepository.loadCommitHistory(repoPath) }
+                        .getOrNull()
+                        ?.onSuccess { text ->
+                            logText = text
+                            logErrorText = null
+                        }
+                }
+            }
+            isBusy = false
+        }
+    }
+
+    LaunchedEffect(repoPath) {
+        refreshJjState()
+    }
 
     DisposableEffect(lifecycleOwner, repoPath) {
         val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> {
-                    wasPaused = true
-                }
-                Lifecycle.Event.ON_RESUME -> {
-                    if (wasPaused) {
-                        wasPaused = false
-                        filesTrigger++
-                        reloadTrigger++
-                        historyTrigger++
-                    }
-                }
-                else -> Unit
+            if (event == Lifecycle.Event.ON_RESUME) {
+                refreshJjState()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    if (inputDialogMode != null) {
+        val mode = inputDialogMode!!
+        val dialogTitle = when (mode) {
+            JjActionType.COMMIT -> if (useEnglish) "Commit Changes (jj commit)" else "変更を保存 (jj commit)"
+            JjActionType.DESCRIBE -> if (useEnglish) "Edit Description (jj describe)" else "説明を編集 (jj describe)"
+            JjActionType.NEW -> if (useEnglish) "New Change (jj new)" else "新規作成 (jj new)"
+            JjActionType.BOOKMARK -> if (useEnglish) "Bookmark (jj bookmark)" else "ブックマーク (jj bookmark)"
+            else -> if (useEnglish) "jj Action" else "jj 操作"
         }
-    }
-    var editingRelativePath by remember(repoPath) { mutableStateOf<String?>(null) }
-    var editingContent by remember(repoPath) { mutableStateOf("") }
-    var editingError by remember(repoPath) { mutableStateOf<String?>(null) }
-    var isSavingFile by remember(repoPath) { mutableStateOf(false) }
-
-    LaunchedEffect(repoPath, filesTrigger, reloadTrigger) {
-        val rootDir = File(repoPath)
-        val collected = withContext(Dispatchers.IO) {
-            if (!rootDir.exists() || !rootDir.isDirectory) {
-                emptyList()
-            } else {
-                rootDir.walkTopDown()
-                    .onEnter { dir ->
-                        val name = dir.name
-                        name != ".git" && name != ".jj"
-                    }
-                    .filter { it.isFile }
-                    .map { file ->
-                        file.relativeTo(rootDir).path.replace('\\', '/')
-                    }
-                    .sorted()
-                    .toList()
-            }
-        }
-        repoFiles = collected
-    }
-
-        fun resolveRepoTargetFile(relPath: String): File? {
-        val cleanedRel = relPath.trim().trimStart('/')
-        if (cleanedRel.isEmpty()) return null
-        val rootDir = File(repoPath)
-        val targetFile = File(rootDir, cleanedRel)
-        val canonicalRoot = runCatching { rootDir.canonicalPath }.getOrDefault(rootDir.absolutePath)
-        val canonicalTarget = runCatching { targetFile.canonicalPath }.getOrDefault(targetFile.absolutePath)
-        if (!canonicalTarget.startsWith(canonicalRoot + File.separator) && canonicalTarget != canonicalRoot) {
-            return null
-        }
-        return targetFile
-    }
-
-    fun openInExternalApp(relPath: String) {
-        val targetFile = resolveRepoTargetFile(relPath)
-        if (targetFile == null) {
-            editingError = "リポジトリ外のパスは開けません。"
-            return
-        }
-        scope.launch {
-            val uri = withContext(Dispatchers.IO) {
-                if (!targetFile.exists()) {
-                    targetFile.parentFile?.mkdirs()
-                    targetFile.writeText("", Charsets.UTF_8)
-                }
-                val authority = "${context.packageName}.fileprovider"
-                runCatching {
-                    FileProvider.getUriForFile(context, authority, targetFile)
-                }.getOrElse {
-                    Uri.fromFile(targetFile)
-                }
-            }
-            val intent = Intent(Intent.ACTION_EDIT).apply {
-                setDataAndType(uri, "text/*")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-            }
-            val chooser = Intent.createChooser(intent, "外部アプリで開く").apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            val launchResult = runCatching { context.startActivity(chooser) }
-            if (launchResult.isFailure) {
-                val viewIntent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, "text/*")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                runCatching { context.startActivity(viewIntent) }.onFailure {
-                    editingError = "外部アプリを起動できませんでした: ${it.message ?: ""}"
-                }
-            }
-        }
-    }
-
-    val externalFilePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { pickedUri: Uri? ->
-        if (pickedUri == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            val loaded = withContext(Dispatchers.IO) {
-                runCatching {
-                    context.contentResolver.openInputStream(pickedUri)?.use { stream ->
-                        val bytes = stream.readBytes()
-                        if (bytes.size > 512 * 1024) {
-                            Pair("", "512KB を超えるファイルは読み込めません。")
-                        } else if (bytes.contains(0.toByte())) {
-                            Pair("", "バイナリファイルはテキスト編集できません。")
-                        } else {
-                            Pair(String(bytes, Charsets.UTF_8), null)
-                        }
-                    } ?: Pair("", "選択したファイルを開けませんでした。")
-                }.getOrElse { err ->
-                    Pair("", err.message ?: "ファイルの読み込みに失敗しました。")
-                }
-            }
-            val lastSegment = pickedUri.lastPathSegment
-                ?.substringAfterLast('/')
-                ?.substringAfterLast(':')
-                ?.takeIf { it.isNotBlank() }
-                ?: "imported_file.txt"
-            val currentPath = editingRelativePath?.trim().orEmpty()
-            editingRelativePath = if (currentPath.isNotEmpty()) currentPath else lastSegment
-            editingContent = loaded.first
-            editingError = loaded.second
-        }
-    }
-fun openFileEditor(relPath: String) {
-        val cleanedRel = relPath.trim().trimStart('/')
-        val rootDir = File(repoPath)
-        val targetFile = if (cleanedRel.isEmpty()) null else File(rootDir, cleanedRel)
-        val canonicalRoot = runCatching { rootDir.canonicalPath }.getOrDefault(rootDir.absolutePath)
-        val canonicalTarget = targetFile?.let { runCatching { it.canonicalPath }.getOrDefault(it.absolutePath) }
-
-        if (canonicalTarget == null || (!canonicalTarget.startsWith(canonicalRoot + File.separator) && canonicalTarget != canonicalRoot)) {
-            editingRelativePath = cleanedRel
-            editingContent = ""
-            editingError = "リポジトリ外のパスは編集できません。"
-            return
-        }
-
-        if (targetFile.exists() && targetFile.isFile) {
-            val bytes = runCatching { targetFile.readBytes() }.getOrNull()
-            if (bytes == null) {
-                editingRelativePath = cleanedRel
-                editingContent = ""
-                editingError = "ファイルを読み込めませんでした（ストレージ権限やパスを確認してください）。"
-            } else if (bytes.size > 512 * 1024) {
-                editingRelativePath = cleanedRel
-                editingContent = ""
-                editingError = "512KB を超えるファイルは編集できません。"
-            } else if (bytes.contains(0.toByte())) {
-                editingRelativePath = cleanedRel
-                editingContent = ""
-                editingError = "バイナリファイルはテキスト編集できません。"
-            } else {
-                editingRelativePath = cleanedRel
-                editingContent = String(bytes, Charsets.UTF_8)
-                editingError = null
-            }
-        } else {
-            editingRelativePath = cleanedRel
-            editingContent = ""
-            editingError = null
-        }
-    }
-
-    val activeEditPath = editingRelativePath
-    if (activeEditPath != null) {
-        AlertDialog(
-            onDismissRequest = {
-                if (!isSavingFile) {
-                    editingRelativePath = null
-                    editingError = null
-                }
-            },
-            title = { Text("リポジトリ内ファイルの中身を編集") },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = activeEditPath,
-                        onValueChange = { updatedPath ->
-                            editingRelativePath = updatedPath
-                            editingError = null
-                        },
-                        label = { Text("ファイルパス（リポジトリ内相対）") },
-                        singleLine = true,
-                        enabled = !isSavingFile,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = editingContent,
-                        onValueChange = { updatedText ->
-                            editingContent = updatedText
-                            editingError = null
-                        },
-                        label = { Text("ファイル内容") },
-                        enabled = !isSavingFile,
-                        minLines = 8,
-                        maxLines = 16,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    if (editingError != null) {
-                        Text(
-                            text = editingError!!,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    enabled = !isSavingFile,
-                    onClick = {
-                        val rel = activeEditPath.trim().trimStart('/')
-                        if (rel.isEmpty()) {
-                            editingError = "ファイルパスを入力してください。"
-                            return@Button
-                        }
-                        val rootDir = File(repoPath)
-                        val targetFile = File(rootDir, rel)
-                        val canonicalRoot = runCatching { rootDir.canonicalPath }.getOrDefault(rootDir.absolutePath)
-                        val canonicalTarget = runCatching { targetFile.canonicalPath }.getOrDefault(targetFile.absolutePath)
-                        if (!canonicalTarget.startsWith(canonicalRoot + File.separator)) {
-                            editingError = "リポジトリ外には保存できません。"
-                            return@Button
-                        }
-
-                        scope.launch {
-                            isSavingFile = true
-                            try {
-                                withContext(Dispatchers.IO) {
-                                    targetFile.parentFile?.mkdirs()
-                                    targetFile.writeText(editingContent, Charsets.UTF_8)
-                                }
-                                editingRelativePath = null
-                                editingError = null
-                                filesTrigger++
-                                reloadTrigger++
-                                historyTrigger++
-                            } catch (e: Exception) {
-                                editingError = e.message ?: "保存に失敗しました。"
-                            } finally {
-                                isSavingFile = false
-                            }
-                        }
-                    }
-                ) {
-                    Text(if (isSavingFile) "保存中..." else "保存")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    enabled = !isSavingFile,
-                    onClick = {
-                        editingRelativePath = null
-                        editingError = null
-                    }
-                ) {
-                    Text("閉じる")
-                }
-            }
-        )
-    }
-
-    var lastCommandOutput by remember(repoPath) { mutableStateOf<JjCommandOutput?>(null) }
-    var commitHistory by remember(repoPath) { mutableStateOf("履歴を読み込み中...") }
-    var pendingInputAction by remember(repoPath) { mutableStateOf<JjActionType?>(null) }
-    var inputText by remember(repoPath) { mutableStateOf("") }
-
-    fun triggerAction(action: JjActionType, input: String? = null) {
-        if (isRunningAction) return
-        scope.launch {
-            isRunningAction = true
-            try {
-                val result = jjRepository.runAction(
-                    repoPath = repoPath,
-                    action = action,
-                    inputValue = input
-                )
-                lastCommandOutput = result
-                if (action == JjActionType.STATUS && !result.isError) {
-                    statusOutput = result.output
-                }
-                if (!result.isError && action in setOf(
-                        JjActionType.LOG,
-                        JjActionType.COMMIT,
-                        JjActionType.DESCRIBE,
-                        JjActionType.NEW,
-                        JjActionType.FETCH,
-                        JjActionType.PUSH,
-                        JjActionType.BOOKMARK,
-                        JjActionType.UNDO,
-                        JjActionType.GIT_FETCH,
-                        JjActionType.GIT_PUSH
-                    )
-                ) {
-                    historyTrigger++
-                }
-            } finally {
-                isRunningAction = false
-            }
-        }
-    }
-
-    LaunchedEffect(repoPath, reloadTrigger) {
-        statusOutput = context.getString(R.string.workspace_loading_status)
-        cloneRepository.loadWorkspaceSummary(repoPath).fold(
-            onSuccess = { statusOutput = it },
-            onFailure = { statusOutput = it.message ?: "Error" }
-        )
-    }
-
-    LaunchedEffect(repoPath, historyTrigger) {
-        commitHistory = "履歴を読み込み中..."
-        jjRepository.loadCommitHistory(repoPath).fold(
-            onSuccess = { commitHistory = it },
-            onFailure = { commitHistory = "履歴取得エラー: ${it.message ?: "不明なエラー"}" }
-        )
-    }
-
-    var showRepoEditDialog by remember(repoPath) { mutableStateOf(false) }
-    var editRepoPath by remember(repoPath) { mutableStateOf(repoPath) }
-    var editRepoUrl by remember(repoPath) { mutableStateOf("") }
-    var editParentDir by remember(repoPath) {
-        mutableStateOf(repoPath.trimEnd('/').substringBeforeLast('/', missingDelimiterValue = "/storage/emulated/0/jjc"))
-    }
-
-    if (showRepoEditDialog) {
-        AlertDialog(
-            onDismissRequest = { showRepoEditDialog = false },
-            title = { Text("リポジトリを編集") },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = editRepoPath,
-                        onValueChange = { editRepoPath = it },
-                        label = { Text("リポジトリパス") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = editRepoUrl,
-                        onValueChange = { editRepoUrl = it },
-                        label = { Text("リポジトリ URL（任意）") },
-                        placeholder = { Text("https://... または git@...") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = editParentDir,
-                        onValueChange = { editParentDir = it },
-                        label = { Text("保存先親フォルダ") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showRepoEditDialog = false
-                        onEditRepository(repoPath, editRepoPath, editRepoUrl, editParentDir)
-                    }
-                ) {
-                    Text("保存")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRepoEditDialog = false }) {
-                    Text("キャンセル")
-                }
-            }
-        )
-    }
-    val dialogAction = pendingInputAction
-    if (dialogAction != null) {
-        val (titleText, hintText) = when (dialogAction) {
-            JjActionType.COMMIT -> "変更を保存 (jj commit)" to "コミットメッセージ（任意）"
-            JjActionType.DESCRIBE -> "説明を編集 (jj describe)" to "チェンジの説明文（任意）"
-            JjActionType.BOOKMARK -> "ブックマーク (jj bookmark set)" to "ブックマーク名（空欄で一覧表示）"
-            else -> dialogAction.label to "入力値"
+        val dialogLabel = when (mode) {
+            JjActionType.BOOKMARK -> if (useEnglish) "Bookmark name" else "ブックマーク名"
+            else -> if (useEnglish) "Message / Description" else "メッセージ・説明"
         }
         AlertDialog(
-            onDismissRequest = {
-                if (!isRunningAction) {
-                    pendingInputAction = null
-                    inputText = ""
-                }
-            },
-            title = { Text(titleText) },
+            onDismissRequest = { inputDialogMode = null },
+            containerColor = JjcCardDark,
+            title = { Text(dialogTitle, color = JjcTextPrimary) },
             text = {
-                OutlinedTextField(
+                JjcInputField(
                     value = inputText,
                     onValueChange = { inputText = it },
-                    placeholder = { Text(hintText) },
-                    singleLine = dialogAction == JjActionType.BOOKMARK,
-                    modifier = Modifier.fillMaxWidth()
+                    label = dialogLabel
                 )
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
-                        val valueToSend = inputText
-                        pendingInputAction = null
-                        inputText = ""
-                        triggerAction(dialogAction, valueToSend)
+                        val value = inputText.trim()
+                        inputDialogMode = null
+                        executeJjAction(mode, value)
                     }
                 ) {
                     Text("実行")
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        pendingInputAction = null
-                        inputText = ""
-                    }
-                ) {
-                    Text("キャンセル")
+                TextButton(onClick = { inputDialogMode = null }) {
+                    Text("キャンセル", color = JjcTextSecondary)
                 }
             }
         )
     }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    if (selectedLogDetail != null) {
+        AlertDialog(
+            onDismissRequest = { selectedLogDetail = null },
+            containerColor = JjcCardDark,
+            title = { Text("コミット詳細 (jj log)", color = JjcAccentBlue) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 380.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = formatJjLogEntryAnnotated(selectedLogDetail!!),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        lineHeight = 20.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedLogDetail = null }) {
+                    Text(if (useEnglish) "Close" else "閉じる", color = JjcAccentBlue)
+                }
+            }
+        )
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = JjcBgDark
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
         ) {
-            Surface(
-                tonalElevation = 3.dp,
-                shadowElevation = 2.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = context.getString(R.string.workspace_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                    val currentRepoName = remember(repoPath) {
-                        repoPath.trimEnd('/').substringAfterLast('/').ifBlank { repoPath }
+            JjcScreenHeader(
+                title = "Jujutsu Controller",
+                subtitle = "Android Edition · $repoName",
+                detail = repoPath,
+                useEnglish = useEnglish,
+                trailing = {
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onOpenRepositorySelector,
+                            shape = JjcShapeSmall,
+                            border = BorderStroke(1.dp, JjcBorderDark),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Text(if (useEnglish) "Repositories" else "リポジトリ選択", color = JjcTextPrimary, style = MaterialTheme.typography.labelMedium)
+                        }
+                        TextButton(
+                            onClick = onOpenInitialSettings,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier.height(28.dp)
+                        ) {
+                            Text(if (useEnglish) "Settings" else "初期設定", color = JjcAccentBlue, style = MaterialTheme.typography.labelSmall)
+                        }
                     }
-                    Text(
-                        text = currentRepoName,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        softWrap = false,
-                        modifier = Modifier
-                            .padding(start = 12.dp)
-                            .weight(1f, fill = false)
-                    )
                 }
-            }
+            )
 
             Column(
                 modifier = Modifier
-                    .weight(1f)
                     .fillMaxWidth()
-                    .verticalScroll(scrollState)
-                    .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 36.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                val actionSpecs = if (useEnglish) {
+                    listOf(
+                        listOf(
+                            Triple("Status", "(jj status)", "status"),
+                            Triple("Refresh Log", "(jj log)", "refresh")
+                        ),
+                        listOf(
+                            Triple("Working Diff", "(jj diff)", "diff"),
+                            Triple("Commit", "(jj commit)", "save")
+                        ),
+                        listOf(
+                            Triple("Describe", "(jj describe)", "describe"),
+                            Triple("New Change", "(jj new)", "new")
+                        ),
+                        listOf(
+                            Triple("Fetch", "(jj git fetch)", "fetch"),
+                            Triple("Push", "(jj git push)", "push")
+                        ),
+                        listOf(
+                            Triple("Bookmark", "(jj bookmark)", "bookmark"),
+                            Triple("Undo", "(jj undo)", "undo")
+                        )
+                    )
+                } else {
+                    listOf(
+                        listOf(
+                            Triple("状態", "(jj status)", "status"),
+                            Triple("履歴を更新", "(jj log)", "refresh")
+                        ),
+                        listOf(
+                            Triple("作業コピー差分", "(jj diff)", "diff"),
+                            Triple("変更を保存", "(jj commit)", "save")
+                        ),
+                        listOf(
+                            Triple("説明を編集", "(jj describe)", "describe"),
+                            Triple("新規作成", "(jj new)", "new")
+                        ),
+                        listOf(
+                            Triple("取得", "(jj git fetch)", "fetch"),
+                            Triple("送信", "(jj git push)", "push")
+                        ),
+                        listOf(
+                            Triple("ブックマーク", "(jj bookmark)", "bookmark"),
+                            Triple("取り消し", "(jj undo)", "undo")
+                        )
+                    )
+                }
 
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                actionSpecs.forEachIndexed { rowIdx, pair ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        pair.forEachIndexed { colIdx, spec ->
+                            val (title, hint, icon) = spec
+                            val isPrimary = rowIdx == 0 && colIdx == 0
+                            JjActionGridButton(
+                                title = title,
+                                commandHint = hint,
+                                iconKind = icon,
+                                primary = isPrimary,
+                                enabled = !isBusy,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    when (hint) {
+                                        "(jj status)" -> executeJjAction(JjActionType.STATUS)
+                                        "(jj log)" -> executeJjAction(JjActionType.LOG)
+                                        "(jj diff)" -> executeJjAction(JjActionType.DIFF)
+                                        "(jj commit)" -> {
+                                            inputText = ""
+                                            inputDialogMode = JjActionType.COMMIT
+                                        }
+                                        "(jj describe)" -> {
+                                            inputText = ""
+                                            inputDialogMode = JjActionType.DESCRIBE
+                                        }
+                                        "(jj new)" -> {
+                                            inputText = ""
+                                            inputDialogMode = JjActionType.NEW
+                                        }
+                                        "(jj git fetch)" -> executeJjAction(JjActionType.FETCH)
+                                        "(jj git push)" -> executeJjAction(JjActionType.PUSH)
+                                        "(jj bookmark)" -> {
+                                            inputText = ""
+                                            inputDialogMode = JjActionType.BOOKMARK
+                                        }
+                                        "(jj undo)" -> executeJjAction(JjActionType.UNDO)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (isBusy) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = JjcShapeMedium,
+                        colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                        border = BorderStroke(1.dp, JjcBorderDark)
                     ) {
                         Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = JjcAccentBlue
+                            )
+                            Text(
+                                text = if (useEnglish) "Running jj command..." else "jj コマンドを実行中...",
+                                color = JjcTextSecondary,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+
+                val currentStatus = statusOutput
+                if (currentStatus != null) {
+                    val isError = currentStatus.isError
+                    if (isError) {
+                        JjcErrorCard(
+                            title = if (useEnglish) "Output / Error (${currentStatus.commandSummary})" else "出力 / エラー (${currentStatus.commandSummary})",
+                            message = currentStatus.output
+                        )
+                    } else {
+                        Card(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            shape = JjcShapeMedium,
+                            colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                            border = BorderStroke(1.dp, JjcBorderDark)
                         ) {
-                            Text("リポジトリ内ファイル編集", style = MaterialTheme.typography.titleMedium)
-                            TextButton(
-                                onClick = { filesTrigger++ },
-                                enabled = !isRunningAction && !isSavingFile
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text("一覧更新")
-                            }
-                        }
-
-                        OutlinedButton(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 44.dp),
-                            enabled = !isRunningAction && !isSavingFile,
-                            onClick = { openFileEditor("README.md") }
-                        ) {
-                            Text(
-                                text = "新規ファイルを作成・編集",
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-
-                        if (repoFiles.isEmpty()) {
-                            Text(
-                                text = "リポジトリ内の編集可能なファイルが見つかりません。",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            repoFiles.take(40).forEach { relFile ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable(enabled = !isRunningAction && !isSavingFile) {
-                                            openFileEditor(relFile)
-                                        }
-                                        .padding(vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = relFile,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontFamily = FontFamily.Monospace,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(end = 8.dp)
-                                    )
-                                    Text(
-                                        text = "中身を編集",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                }
-                            }
-                            if (repoFiles.size > 40) {
                                 Text(
-                                    text = "ほか ${repoFiles.size - 40} 件のファイルがあります。",
+                                    text = if (useEnglish) "Status (${currentStatus.commandSummary})" else "状態 (${currentStatus.commandSummary})",
+                                    color = JjcAccentBlue,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                                Text(
+                                    text = formatJjStatusAnnotated(currentStatus.output.ifBlank { if (useEnglish) "(No output)" else "(出力なし)" }),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    fontFamily = FontFamily.Monospace
                                 )
                             }
                         }
                     }
                 }
 
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(context.getString(R.string.workspace_current_status), style = MaterialTheme.typography.labelMedium)
-                        Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = if (useEnglish) "Commit Log (jj log)" else "コミット履歴 (jj log)",
+                    color = JjcTextPrimary,
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                if (logText == null && logErrorText == null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = JjcShapeMedium,
+                        colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                        border = BorderStroke(1.dp, JjcBorderDark)
+                    ) {
                         Text(
-                            text = statusOutput,
+                            text = if (useEnglish) "Loading commit history..." else "履歴を読み込んでいます...",
+                            color = JjcTextSecondary,
                             style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace
+                            modifier = Modifier.padding(12.dp)
                         )
                     }
-                }
-
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Jujutsu 操作", style = MaterialTheme.typography.titleMedium)
-                            if (isRunningAction) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            }
+                } else if (logErrorText != null && logText.isNullOrBlank()) {
+                    JjcErrorCard(
+                        title = if (useEnglish) "Log Error (jj log)" else "履歴取得エラー (jj log)",
+                        message = logErrorText!!
+                    )
+                } else {
+                    val entries = logText.orEmpty()
+                        .split("\n\n")
+                        .flatMap { block ->
+                            val trimmed = block.trim()
+                            if (trimmed.isEmpty()) emptyList() else listOf(trimmed)
                         }
 
-                        val jjActions = JjActionType.entries.filterNot { it.isGitCommand }
-                        Column(
+                    if (entries.isEmpty()) {
+                        Card(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            jjActions.chunked(2).forEach { rowActions ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    rowActions.forEach { action ->
-                                        OutlinedButton(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .heightIn(min = 48.dp),
-                                            enabled = !isRunningAction,
-                                            onClick = {
-                                                if (action.requiresInput) {
-                                                    inputText = ""
-                                                    pendingInputAction = action
-                                                } else {
-                                                    triggerAction(action)
-                                                }
-                                            }
-                                        ) {
-                                            Text(
-                                                text = action.label,
-                                                maxLines = 1,
-                                                softWrap = false
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Git 操作", style = MaterialTheme.typography.titleMedium)
-                            if (isRunningAction) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            }
-                        }
-
-                        val gitActions = JjActionType.entries.filter { it.isGitCommand }
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            gitActions.chunked(2).forEach { rowActions ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    rowActions.forEach { action ->
-                                        OutlinedButton(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .heightIn(min = 48.dp),
-                                            enabled = !isRunningAction,
-                                            onClick = {
-                                                if (action.requiresInput) {
-                                                    inputText = ""
-                                                    pendingInputAction = action
-                                                } else {
-                                                    triggerAction(action)
-                                                }
-                                            }
-                                        ) {
-                                            Text(
-                                                text = action.label,
-                                                maxLines = 1,
-                                                softWrap = false
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        OutlinedButton(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 48.dp),
-                            enabled = !isRunningAction,
-                            onClick = onOpenNewClone
+                            shape = JjcShapeMedium,
+                            colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                            border = BorderStroke(1.dp, JjcBorderDark)
                         ) {
                             Text(
-                                text = "別のリポジトリを Clone",
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-                    }
-                }
-
-                val cmdOutput = lastCommandOutput
-                if (cmdOutput != null) {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = "実行結果 (${cmdOutput.commandSummary})",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = if (cmdOutput.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = cmdOutput.output,
+                                text = if (useEnglish) "Commit history (0 entries)" else "コミット履歴 (0件)",
+                                color = JjcTextSecondary,
                                 style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace
+                                modifier = Modifier.padding(12.dp)
                             )
                         }
-                    }
-                }
-
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("コミット履歴", style = MaterialTheme.typography.titleMedium)
-                            TextButton(
-                                onClick = { historyTrigger++ },
-                                enabled = !isRunningAction
+                    } else {
+                        entries.forEach { entry ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedLogDetail = entry },
+                                shape = JjcShapeMedium,
+                                colors = CardDefaults.cardColors(containerColor = JjcCardDark),
+                                border = BorderStroke(1.dp, JjcBorderDark)
                             ) {
-                                Text("履歴を再取得")
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = formatJjLogEntryAnnotated(entry),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                    Text(
+                                        text = if (useEnglish) "Tap to view details" else "タップして詳細を表示",
+                                        color = JjcAccentBlue,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
                             }
                         }
-                        Text(
-                            text = commitHistory,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace
-                        )
                     }
-                }
-
-                Button(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp),
-                    enabled = !isRunningAction,
-                    onClick = { reloadTrigger++ }
-                ) {
-                    Text(context.getString(R.string.workspace_refresh_status))
                 }
             }
         }
     }
 }
 
-@Composable
+private val JjcAddedGreen = Color(0xFF5CE08A)
+private val JjcModifiedAmber = Color(0xFFFFC857)
+private val JjcDeletedRed = Color(0xFFFF7B7B)
+private val JjcCommitIdViolet = Color(0xFFB39DDB)
+private val JjcBookmarkTeal = Color(0xFF4DD0E1)
 
-private fun StatusRow(label: String, statusText: String) {
+private fun formatJjStatusAnnotated(rawText: String): androidx.compose.ui.text.AnnotatedString {
+    val idRegex = Regex("""\b([k-z]{8,12})\s+([0-9a-f]{7,12})\b""")
+    return androidx.compose.ui.text.buildAnnotatedString {
+        val lines = rawText.split("\n")
+        lines.forEachIndexed { idx, line ->
+            val trimmed = line.trimStart()
+            when {
+                trimmed.startsWith("A ") || trimmed.startsWith("Added ") -> {
+                    withStyle(SpanStyle(color = JjcAddedGreen, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)) {
+                        append(line)
+                    }
+                }
+                trimmed.startsWith("M ") || trimmed.startsWith("Modified ") || trimmed.startsWith("R ") || trimmed.startsWith("Renamed ") -> {
+                    withStyle(SpanStyle(color = JjcModifiedAmber)) {
+                        append(line)
+                    }
+                }
+                trimmed.startsWith("D ") || trimmed.startsWith("Deleted ") -> {
+                    withStyle(SpanStyle(color = JjcDeletedRed)) {
+                        append(line)
+                    }
+                }
+                line.contains("conflict", ignoreCase = true) || line.contains("error", ignoreCase = true) -> {
+                    withStyle(SpanStyle(color = JjcErrorText)) {
+                        append(line)
+                    }
+                }
+                trimmed.startsWith("Working copy") || trimmed.startsWith("Parent commit") -> {
+                    val colonIdx = line.indexOf(':')
+                    if (colonIdx > 0) {
+                        val labelPart = line.substring(0, colonIdx + 1)
+                        val bodyPart = line.substring(colonIdx + 1)
+                        val isWorkingCopy = trimmed.startsWith("Working copy")
+                        withStyle(
+                            SpanStyle(
+                                color = if (isWorkingCopy) JjcAccentBlue else JjcTextPrimary,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                            )
+                        ) {
+                            append(labelPart)
+                        }
+                        val idMatch = idRegex.find(bodyPart)
+                        if (idMatch != null) {
+                            append(bodyPart.substring(0, idMatch.range.first))
+                            withStyle(SpanStyle(color = JjcAccentBlue, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)) {
+                                append(idMatch.groupValues[1])
+                            }
+                            append(" ")
+                            withStyle(SpanStyle(color = JjcCommitIdViolet)) {
+                                append(idMatch.groupValues[2])
+                            }
+                            val rest = bodyPart.substring(idMatch.range.last + 1)
+                            withStyle(SpanStyle(color = JjcTextSecondary)) {
+                                append(rest)
+                            }
+                        } else {
+                            withStyle(SpanStyle(color = JjcTextSecondary)) {
+                                append(bodyPart)
+                            }
+                        }
+                    } else {
+                        withStyle(SpanStyle(color = JjcTextPrimary)) { append(line) }
+                    }
+                }
+                else -> {
+                    withStyle(SpanStyle(color = JjcTextSecondary)) {
+                        append(line)
+                    }
+                }
+            }
+            if (idx < lines.lastIndex) append("\n")
+        }
+    }
+}
+
+private fun formatJjLogEntryAnnotated(entry: String): androidx.compose.ui.text.AnnotatedString {
+    val headerLineRegex = Regex("""^([@○◆×◉│├└─\s]*)([k-z]{8,12})\s+(\S+@\S+)\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})(?:\s+(.*))?$""")
+    val commitHashRegex = Regex("""\b[0-9a-f]{7,12}\b""")
+    val metaTagRegex = Regex("""\(empty\)|\(no description set\)""")
+    return androidx.compose.ui.text.buildAnnotatedString {
+        val lines = entry.split("\n")
+        lines.forEachIndexed { lineIdx, line ->
+            val trimmed = line.trim()
+            val headerMatch = headerLineRegex.matchEntire(line)
+            when {
+                headerMatch != null -> {
+                    val graphPrefix = headerMatch.groupValues[1]
+                    val changeId = headerMatch.groupValues[2]
+                    val email = headerMatch.groupValues[3]
+                    val timestamp = headerMatch.groupValues[4]
+                    val trailingMeta = headerMatch.groupValues[5]
+                    if (graphPrefix.isNotEmpty()) {
+                        withStyle(SpanStyle(color = JjcAccentBlue, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)) {
+                            append(graphPrefix)
+                        }
+                    }
+                    withStyle(SpanStyle(color = JjcAccentBlue, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)) {
+                        append(changeId)
+                    }
+                    append(" ")
+                    withStyle(SpanStyle(color = JjcTextSecondary)) {
+                        append("$email $timestamp")
+                    }
+                    if (trailingMeta.isNotBlank()) {
+                        append(" ")
+                        trailingMeta.split(Regex("""\s+""")).forEachIndexed { tIdx, tok ->
+                            if (tIdx > 0) append(" ")
+                            when {
+                                commitHashRegex.matches(tok) -> {
+                                    withStyle(SpanStyle(color = JjcCommitIdViolet)) { append(tok) }
+                                }
+                                tok == "(empty)" || tok == "(no description set)" -> {
+                                    withStyle(SpanStyle(color = JjcTextSecondary)) { append(tok) }
+                                }
+                                else -> {
+                                    withStyle(SpanStyle(color = JjcBookmarkTeal, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)) {
+                                        append(tok)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                commitHashRegex.matches(trimmed) -> {
+                    withStyle(SpanStyle(color = JjcCommitIdViolet)) {
+                        append(line)
+                    }
+                }
+                metaTagRegex.containsMatchIn(trimmed) -> {
+                    var cursor = 0
+                    metaTagRegex.findAll(line).forEach { m ->
+                        if (m.range.first > cursor) {
+                            withStyle(SpanStyle(color = JjcTextPrimary)) {
+                                append(line.substring(cursor, m.range.first))
+                            }
+                        }
+                        withStyle(SpanStyle(color = JjcTextSecondary)) {
+                            append(m.value)
+                        }
+                        cursor = m.range.last + 1
+                    }
+                    if (cursor < line.length) {
+                        withStyle(SpanStyle(color = JjcTextPrimary)) {
+                            append(line.substring(cursor))
+                        }
+                    }
+                }
+                Regex("""^[0-9a-f]{7,12}\b""").containsMatchIn(trimmed) || Regex("""^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}""").containsMatchIn(trimmed) -> {
+                    line.split(Regex("""(\s+)""")).forEach { part ->
+                        val p = part.trim()
+                        when {
+                            p.isEmpty() -> append(part)
+                            commitHashRegex.matches(p) -> withStyle(SpanStyle(color = JjcCommitIdViolet)) { append(part) }
+                            Regex("""^\d{4}-\d{2}-\d{2}$""").matches(p) || Regex("""^\d{2}:\d{2}:\d{2}$""").matches(p) ->
+                                withStyle(SpanStyle(color = JjcTextSecondary)) { append(part) }
+                            else -> withStyle(SpanStyle(color = JjcBookmarkTeal, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)) { append(part) }
+                        }
+                    }
+                }
+                trimmed.contains("@") && !trimmed.contains(" ") -> {
+                    withStyle(SpanStyle(color = JjcTextSecondary)) {
+                        append(line)
+                    }
+                }
+                else -> {
+                    withStyle(SpanStyle(color = JjcTextPrimary)) {
+                        append(line)
+                    }
+                }
+            }
+            if (lineIdx < lines.lastIndex) append("\n")
+        }
+    }
+}
+
+private fun Context.findActivity(): Activity? {
+    var ctx = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
+}
+
+@Composable
+private fun StatusRow(label: String, value: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        Text(
-            text = statusText,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary
-        )
+        Text(text = label, color = JjcTextSecondary, style = MaterialTheme.typography.bodyMedium)
+        Text(text = value, color = JjcTextPrimary, style = MaterialTheme.typography.labelLarge)
     }
 }
 
-private fun resolvePrimaryStoragePath(treeUri: Uri): String? {
-    val docId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull() ?: return null
-    val parts = docId.split(":", limit = 2)
-    return if (parts.size == 2 && parts[0].equals("primary", ignoreCase = true)) {
-        "/storage/emulated/0/${parts[1]}".trimEnd('/')
-    } else {
-        null
-    }
-}
 
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
 
-private fun resolveSelectedFolderPath(context: Context, treeUri: Uri): String? {
-    return runCatching {
-        val docId = DocumentsContract.getTreeDocumentId(treeUri)
-        val split = docId.split(":", limit = 2)
-        if (split.size == 2) {
-            val type = split[0]
-            val relative = split[1].trimStart('/')
-            if (type.equals("primary", ignoreCase = true)) {
-                val base = android.os.Environment.getExternalStorageDirectory().absolutePath
-                if (relative.isEmpty()) base else "$base/$relative"
-            } else {
-                "/storage/$type/$relative".trimEnd('/')
-            }
-        } else {
-            treeUri.path
-        }
-    }.getOrNull()
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

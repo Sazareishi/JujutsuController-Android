@@ -1,4 +1,4 @@
-package com.example.jujutsucontroller.domain
+﻿package com.example.jujutsucontroller.domain
 
 import com.example.jujutsucontroller.termux.TermuxCommandClient
 import com.example.jujutsucontroller.termux.TermuxCommandClient.Companion.TERMUX_BIN_PREFIX
@@ -30,26 +30,40 @@ class GitCloneRepository(
     private val client: TermuxCommandClient
 ) {
     private val operationMutex = Mutex()
+    private val cargoJjPath = "/data/data/com.termux/files/home/.cargo/bin/jj"
+    private val usrJjPath = "$TERMUX_BIN_PREFIX/jj"
+
+    private fun resolveJjExecutable(): String {
+        return if (File(usrJjPath).exists() || !File(cargoJjPath).exists()) {
+            usrJjPath
+        } else {
+            cargoJjPath
+        }
+    }
 
     suspend fun cloneAndConfigure(
         params: CloneParams,
-        onPhaseChanged: (String) -> Unit
+        onPhaseChanged: (String) -> Unit,
+        useEnglish: Boolean = java.util.Locale.getDefault().language != "ja"
     ): Result<String> = operationMutex.withLock {
         val trimmedUrl = params.repositoryUrl.trim()
         val trimmedName = params.gitUserName.trim()
         val trimmedEmail = params.gitUserEmail.trim()
+        val trimmedParent = params.parentDirectoryPath.trim().ifEmpty {
+            "/data/data/com.termux/files/home/repos"
+        }
         val repoName = extractRepoName(trimmedUrl)
-        val targetRepoDir = File(params.parentDirectoryPath.trim(), repoName).absolutePath
+        val targetRepoDir = File(trimmedParent, repoName).absolutePath
 
-        onPhaseChanged("保存先フォルダを確認しています...")
+        onPhaseChanged(if (useEnglish) "Checking save folder..." else "保存先フォルダを確認しています...")
         val mkdirResult = client.execute(
             executablePath = "$TERMUX_BIN_PREFIX/mkdir",
-            arguments = arrayOf("-p", params.parentDirectoryPath.trim()),
+            arguments = arrayOf("-p", trimmedParent),
             timeoutMillis = 10_000L
         )
         if (mkdirResult.isFailure) {
             return Result.failure(
-                IllegalStateException("保存先フォルダを作成できませんでした。Termux のストレージ権限を確認してください。")
+                IllegalStateException(if (useEnglish) "Could not create save directory. Check the path or Termux permissions." else "保存先フォルダを作成できませんでした。パスまたは Termux の権限を確認してください。")
             )
         }
 
@@ -62,8 +76,9 @@ class GitCloneRepository(
             if (!params.overwriteExisting) {
                 return Result.failure(RepositoryAlreadyExistsException(targetRepoDir))
             }
-            onPhaseChanged("既存の同名フォルダを削除しています...")
-            if (targetRepoDir.startsWith("/storage/") && targetRepoDir.length > 20) {
+            onPhaseChanged(if (useEnglish) "Removing existing folder..." else "既存の同名フォルダを削除しています...")
+            val safeToDelete = targetRepoDir.length > 10 && targetRepoDir != "/" && targetRepoDir != "/data/data/com.termux/files/home"
+            if (safeToDelete) {
                 val removeExisting = client.execute(
                     executablePath = "$TERMUX_BIN_PREFIX/rm",
                     arguments = arrayOf("-rf", targetRepoDir),
@@ -71,19 +86,19 @@ class GitCloneRepository(
                 )
                 if (removeExisting.isFailure) {
                     return Result.failure(
-                        IllegalStateException("既存フォルダの削除に失敗しました: $targetRepoDir")
+                        IllegalStateException(if (useEnglish) "Failed to remove existing folder: $targetRepoDir" else "既存フォルダの削除に失敗しました: $targetRepoDir")
                     )
                 }
             } else {
                 return Result.failure(
-                    IllegalStateException("安全のためこのパスの自動上書きは許可されていません: $targetRepoDir")
+                    IllegalStateException(if (useEnglish) "Automatic overwrite is not allowed for safety on this path: $targetRepoDir" else "安全のためこのパスの自動上書きは許可されていません: $targetRepoDir")
                 )
             }
         }
 
-        onPhaseChanged("リポジトリを Clone しています...")
+        onPhaseChanged(if (useEnglish) "Cloning repository with jj git clone..." else "jj git clone でリポジトリを複製しています...")
         val cloneResult = try {
-            executeCloneCommand(
+            executeJjGitClone(
                 url = trimmedUrl,
                 targetDir = targetRepoDir,
                 authType = params.authType,
@@ -101,92 +116,46 @@ class GitCloneRepository(
                 cleanupAbortedClone(targetRepoDir)
             }
             return Result.failure(
-                cloneResult.exceptionOrNull() ?: IllegalStateException("Clone に失敗しました。")
+                cloneResult.exceptionOrNull() ?: IllegalStateException(if (useEnglish) "jj git clone failed." else "jj git clone に失敗しました。")
             )
         }
 
-        onPhaseChanged("Git ユーザー情報（user.name / user.email）を設定しています...")
+        onPhaseChanged(if (useEnglish) "Configuring Jujutsu author info (user.name / user.email)..." else "Jujutsu 作成者情報（user.name / user.email）を設定しています...")
+        val jjExec = resolveJjExecutable()
         client.execute(
-            executablePath = "$TERMUX_BIN_PREFIX/git",
-            arguments = arrayOf("config", "--global", "--add", "safe.directory", targetRepoDir),
-            timeoutMillis = 10_000L
-        )
-
-        val setName = client.execute(
-            executablePath = "$TERMUX_BIN_PREFIX/git",
-            arguments = arrayOf("config", "--local", "user.name", trimmedName),
+            executablePath = jjExec,
+            arguments = arrayOf("config", "set", "--repo", "user.name", trimmedName),
             workdir = targetRepoDir,
             timeoutMillis = 10_000L
         )
-        if (setName.isFailure) {
-            withContext(NonCancellable) {
-                cleanupAbortedClone(targetRepoDir)
-            }
-            val detail = setName.exceptionOrNull()?.message?.takeIf { it.isNotBlank() }
-            return Result.failure(
-                IllegalStateException(
-                    if (detail != null) "git config user.name の設定に失敗しました: $detail"
-                    else "git config user.name の設定に失敗しました。"
-                )
-            )
-        }
-
-        val setEmail = client.execute(
-            executablePath = "$TERMUX_BIN_PREFIX/git",
-            arguments = arrayOf("config", "--local", "user.email", trimmedEmail),
-            workdir = targetRepoDir,
-            timeoutMillis = 10_000L
-        )
-        if (setEmail.isFailure) {
-            withContext(NonCancellable) {
-                cleanupAbortedClone(targetRepoDir)
-            }
-            val detail = setEmail.exceptionOrNull()?.message?.takeIf { it.isNotBlank() }
-            return Result.failure(
-                IllegalStateException(
-                    if (detail != null) "git config user.email の設定に失敗しました: $detail"
-                    else "git config user.email の設定に失敗しました。"
-                )
-            )
-        }
-        onPhaseChanged("Jujutsu ワークスペースを準備しています...")
         client.execute(
-            executablePath = "$TERMUX_BIN_PREFIX/jj",
-            arguments = arrayOf("git", "init", "--colocate"),
+            executablePath = jjExec,
+            arguments = arrayOf("config", "set", "--repo", "user.email", trimmedEmail),
             workdir = targetRepoDir,
-            timeoutMillis = 15_000L
+            timeoutMillis = 10_000L
         )
 
         return Result.success(targetRepoDir)
     }
 
-    suspend fun loadWorkspaceSummary(repoPath: String): Result<String> {
+    suspend fun loadWorkspaceSummary(repoPath: String,
+        useEnglish: Boolean = java.util.Locale.getDefault().language != "ja"): Result<String> {
         val statusRes = client.execute(
-            executablePath = "$TERMUX_BIN_PREFIX/jj",
+            executablePath = resolveJjExecutable(),
             arguments = arrayOf("status"),
             workdir = repoPath,
             timeoutMillis = 10_000L
         )
-        if (statusRes.isSuccess) {
-            return Result.success(statusRes.getOrThrow().stdout.ifBlank { "変更なし（クリーン）" })
-        }
-
-        val gitStatusRes = client.execute(
-            executablePath = "$TERMUX_BIN_PREFIX/git",
-            arguments = arrayOf("status", "--short"),
-            workdir = repoPath,
-            timeoutMillis = 10_000L
-        )
-        return if (gitStatusRes.isSuccess) {
-            Result.success(gitStatusRes.getOrThrow().stdout.ifBlank { "変更なし（git status クリーン）" })
+        return if (statusRes.isSuccess) {
+            Result.success(statusRes.getOrThrow().stdout.ifBlank { if (useEnglish) "Clean (no changes)" else "変更なし（クリーン）" })
         } else {
             Result.failure(
-                statusRes.exceptionOrNull() ?: IllegalStateException("リポジトリ状態の取得に失敗しました。")
+                statusRes.exceptionOrNull() ?: IllegalStateException(if (useEnglish) "Failed to load jj status." else "jj status の取得に失敗しました。")
             )
         }
     }
 
-    private suspend fun executeCloneCommand(
+    private suspend fun executeJjGitClone(
         url: String,
         targetDir: String,
         authType: AuthType,
@@ -194,8 +163,8 @@ class GitCloneRepository(
     ) = when (authType) {
         AuthType.HTTPS -> {
             client.execute(
-                executablePath = "$TERMUX_BIN_PREFIX/git",
-                arguments = arrayOf("clone", url, targetDir),
+                executablePath = resolveJjExecutable(),
+                arguments = arrayOf("git", "clone", url, targetDir),
                 timeoutMillis = 180_000L
             )
         }
@@ -207,7 +176,8 @@ class GitCloneRepository(
                     executablePath = "$TERMUX_BIN_PREFIX/env",
                     arguments = arrayOf(
                         "GIT_SSH_COMMAND=$sshCmd",
-                        "$TERMUX_BIN_PREFIX/git",
+                        resolveJjExecutable(),
+                        "git",
                         "clone",
                         url,
                         targetDir
@@ -216,8 +186,8 @@ class GitCloneRepository(
                 )
             } else {
                 client.execute(
-                    executablePath = "$TERMUX_BIN_PREFIX/git",
-                    arguments = arrayOf("clone", url, targetDir),
+                    executablePath = resolveJjExecutable(),
+                    arguments = arrayOf("git", "clone", url, targetDir),
                     timeoutMillis = 180_000L
                 )
             }
@@ -227,7 +197,7 @@ class GitCloneRepository(
     private suspend fun cleanupAbortedClone(targetDir: String) {
         client.execute(
             executablePath = "$TERMUX_BIN_PREFIX/pkill",
-            arguments = arrayOf("-f", "git.*clone.*$targetDir"),
+            arguments = arrayOf("-f", "jj.*git.*clone.*$targetDir"),
             timeoutMillis = 5_000L
         )
         if (targetDir.isNotBlank() && targetDir != "/") {

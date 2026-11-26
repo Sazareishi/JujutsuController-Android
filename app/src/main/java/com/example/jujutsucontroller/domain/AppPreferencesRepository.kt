@@ -1,4 +1,4 @@
-package com.example.jujutsucontroller.domain
+﻿package com.example.jujutsucontroller.domain
 
 import android.content.Context
 import java.io.File
@@ -9,7 +9,7 @@ data class SetupTemplate(
     val gitUserName: String = "",
     val gitUserEmail: String = "",
     val repositoryUrl: String = "",
-    val parentDirectoryPath: String = "/storage/emulated/0/jjc",
+    val parentDirectoryPath: String = "/data/data/com.termux/files/home/repos",
     val authTypeName: String = AuthType.HTTPS.name,
     val sshPrivateKeyPath: String = "/data/data/com.termux/files/home/.ssh/id_ed25519",
     val registeredRepoPath: String? = null
@@ -23,7 +23,7 @@ data class SavedAppSettings(
     val gitUserName: String = "",
     val gitUserEmail: String = "",
     val repositoryUrl: String = "",
-    val parentDirectoryPath: String = "/storage/emulated/0/jjc",
+    val parentDirectoryPath: String = "/data/data/com.termux/files/home/repos",
     val activeRepositoryPath: String? = null,
     val registeredRepositories: List<String> = emptyList(),
     val templateName: String = "デフォルト初期設定",
@@ -68,7 +68,7 @@ class AppPreferencesRepository(context: Context) {
             fallbackUserName = savedUserName,
             fallbackUserEmail = savedUserEmail,
             fallbackRepoUrl = savedRepoUrl,
-            fallbackParentDir = if (savedParent.isNotEmpty()) savedParent else "/storage/emulated/0/jjc",
+            fallbackParentDir = if (savedParent.isNotEmpty()) savedParent else "/data/data/com.termux/files/home/repos",
             fallbackAuthType = savedAuthType,
             fallbackSshKey = savedSshKey,
             repos = repos
@@ -80,7 +80,7 @@ class AppPreferencesRepository(context: Context) {
             gitUserName = savedUserName,
             gitUserEmail = savedUserEmail,
             repositoryUrl = savedRepoUrl,
-            parentDirectoryPath = if (savedParent.isNotEmpty()) savedParent else "/storage/emulated/0/jjc",
+            parentDirectoryPath = if (savedParent.isNotEmpty()) savedParent else "/data/data/com.termux/files/home/repos",
             activeRepositoryPath = active,
             registeredRepositories = repos,
             templateName = savedTemplateName,
@@ -132,7 +132,7 @@ class AppPreferencesRepository(context: Context) {
         registeredRepoPath: String? = null
     ) {
         val cleanedName = templateName.trim().ifEmpty { "デフォルト初期設定" }
-        val cleanedParent = parentDirectoryPath.trim().ifEmpty { "/storage/emulated/0/jjc" }
+        val cleanedParent = parentDirectoryPath.trim().ifEmpty { "/data/data/com.termux/files/home/repos" }
         val cleanedSshKey = sshPrivateKeyPath.trim().ifEmpty { "/data/data/com.termux/files/home/.ssh/id_ed25519" }
         val cleanedRepoUrl = repositoryUrl.trim()
 
@@ -215,7 +215,7 @@ class AppPreferencesRepository(context: Context) {
             .putString(KEY_GIT_USER_NAME, userName.trim())
             .putString(KEY_GIT_USER_EMAIL, userEmail.trim())
             .putString(KEY_REPO_URL, repositoryUrl.trim())
-            .putString(KEY_PARENT_DIR, parentDirectoryPath.trim().ifEmpty { "/storage/emulated/0/jjc" })
+            .putString(KEY_PARENT_DIR, parentDirectoryPath.trim().ifEmpty { "/data/data/com.termux/files/home/repos" })
             .putString(KEY_REGISTERED_REPOS, current.joinToString("\n"))
             .putString(KEY_AUTH_TYPE, resolvedAuth.name)
             .putString(KEY_SSH_KEY_PATH, resolvedKey)
@@ -246,10 +246,37 @@ class AppPreferencesRepository(context: Context) {
         prefs.edit()
             .putString(KEY_GIT_USER_NAME, userName.trim())
             .putString(KEY_GIT_USER_EMAIL, userEmail.trim())
-            .putString(KEY_PARENT_DIR, parentDirectoryPath.trim().ifEmpty { "/storage/emulated/0/jjc" })
+            .putString(KEY_PARENT_DIR, parentDirectoryPath.trim().ifEmpty { "/data/data/com.termux/files/home/repos" })
             .apply()
     }
 
+    fun updateInitialSettings(
+        userName: String,
+        userEmail: String,
+        parentDirectoryPath: String,
+        authType: AuthType = loadSettings().resolvedAuthType(),
+        sshPrivateKeyPath: String = loadSettings().sshPrivateKeyPath
+    ) {
+        prefs.edit()
+            .putString(KEY_GIT_USER_NAME, userName.trim())
+            .putString(KEY_GIT_USER_EMAIL, userEmail.trim())
+            .putString(KEY_PARENT_DIR, parentDirectoryPath.trim().ifEmpty { "/data/data/com.termux/files/home/repos" })
+            .putString(KEY_AUTH_TYPE, authType.name)
+            .putString(KEY_SSH_KEY_PATH, sshPrivateKeyPath.trim().ifEmpty { "/data/data/com.termux/files/home/.ssh/id_ed25519" })
+            .apply()
+    }
+    fun registerRepositoryPath(repoPath: String): String {
+        val cleaned = repoPath.trim().trimEnd('/')
+        if (cleaned.isEmpty()) return ""
+        val current = loadSettings().registeredRepositories.toMutableList()
+        current.remove(cleaned)
+        current.add(0, cleaned)
+        prefs.edit()
+            .putString(KEY_REGISTERED_REPOS, current.joinToString("\n"))
+            .putString(KEY_ACTIVE_REPO, cleaned)
+            .apply()
+        return cleaned
+    }
     fun setActiveRepository(repoPath: String) {
         val cleaned = repoPath.trim()
         if (cleaned.isEmpty()) return
@@ -260,6 +287,16 @@ class AppPreferencesRepository(context: Context) {
             .putString(KEY_REGISTERED_REPOS, current.joinToString("\n"))
             .putString(KEY_ACTIVE_REPO, cleaned)
             .apply()
+    }
+
+
+    fun loadAppLanguage(): String {
+        return prefs.getString(KEY_APP_LANGUAGE, "SYSTEM")?.trim()?.ifEmpty { "SYSTEM" } ?: "SYSTEM"
+    }
+
+    fun saveAppLanguage(languageName: String) {
+        val cleaned = languageName.trim().ifEmpty { "SYSTEM" }
+        prefs.edit().putString(KEY_APP_LANGUAGE, cleaned).apply()
     }
 
     fun removeRepository(repoPath: String) {
@@ -373,5 +410,6 @@ class AppPreferencesRepository(context: Context) {
         private const val KEY_SSH_KEY_PATH = "ssh_private_key_path"
         private const val KEY_HAS_TEMPLATE = "has_template"
         private const val KEY_TEMPLATES_LIST = "setup_templates_list"
+        private const val KEY_APP_LANGUAGE = "app_language"
     }
 }

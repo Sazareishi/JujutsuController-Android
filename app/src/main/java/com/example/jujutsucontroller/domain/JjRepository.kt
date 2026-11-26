@@ -36,6 +36,29 @@ data class JjCommandOutput(
 class JjRepository(
     private val client: TermuxCommandClient
 ) {
+    private val cargoJjPath = "/data/data/com.termux/files/home/.cargo/bin/jj"
+    private val usrJjPath = "$TERMUX_BIN_PREFIX/jj"
+
+    private suspend fun executeJj(
+        args: Array<String>,
+        workdir: String,
+        timeoutMillis: Long
+    ) = if (java.io.File(usrJjPath).exists() || !java.io.File(cargoJjPath).exists()) {
+        client.execute(
+            executablePath = usrJjPath,
+            arguments = args,
+            workdir = workdir,
+            timeoutMillis = timeoutMillis
+        )
+    } else {
+        client.execute(
+            executablePath = cargoJjPath,
+            arguments = args,
+            workdir = workdir,
+            timeoutMillis = timeoutMillis
+        )
+    }
+
     suspend fun runAction(
         repoPath: String,
         action: JjActionType,
@@ -129,18 +152,20 @@ class JjRepository(
             )
         }
 
-        val executable = if (action.isGitCommand) {
-            "$TERMUX_BIN_PREFIX/git"
+        val execResult = if (action.isGitCommand) {
+            client.execute(
+                executablePath = "$TERMUX_BIN_PREFIX/git",
+                arguments = args,
+                workdir = repoPath,
+                timeoutMillis = timeout
+            )
         } else {
-            "$TERMUX_BIN_PREFIX/jj"
+            executeJj(
+                args = args,
+                workdir = repoPath,
+                timeoutMillis = timeout
+            )
         }
-
-        val execResult = client.execute(
-            executablePath = executable,
-            arguments = args,
-            workdir = repoPath,
-            timeoutMillis = timeout
-        )
 
         return execResult.fold(
             onSuccess = { res ->
@@ -161,7 +186,7 @@ class JjRepository(
                         val parts = mutableListOf<String>()
                         if (err.result.stderr.isNotBlank()) parts += err.result.stderr.trim()
                         if (err.result.stdout.isNotBlank()) parts += err.result.stdout.trim()
-                        if (!err.result.errorMessage.isNullOrBlank()) parts += err.result.errorMessage!!
+                        if (!err.result.errorMessage.isNullOrBlank()) parts += err.result.errorMessage.orEmpty()
                         parts += "終了コード: ${err.result.exitCode}"
                         parts.distinct().joinToString("\n")
                     }
@@ -178,9 +203,8 @@ class JjRepository(
     }
 
     suspend fun loadCommitHistory(repoPath: String, limit: Int = 30): Result<String> {
-        val jjLog = client.execute(
-            executablePath = "$TERMUX_BIN_PREFIX/jj",
-            arguments = arrayOf("log", "--no-graph", "-n", limit.toString()),
+        val jjLog = executeJj(
+            args = arrayOf("log", "--no-graph", "-n", limit.toString()),
             workdir = repoPath,
             timeoutMillis = 20_000L
         )

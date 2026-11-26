@@ -1,4 +1,4 @@
-package com.example.jujutsucontroller.ui.clone
+﻿package com.example.jujutsucontroller.ui.clone
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,7 +21,7 @@ data class CloneSetupUiState(
     val gitUserName: String = "",
     val gitUserEmail: String = "",
     val repositoryUrl: String = "",
-    val targetParentDir: String = "/storage/emulated/0/Documents/JujutsuRepos",
+    val targetParentDir: String = "/data/data/com.termux/files/home/repos",
     val authType: AuthType = AuthType.HTTPS,
     val isAuthTypeManuallySelected: Boolean = false,
     val sshPrivateKeyPath: String = "/data/data/com.termux/files/home/.ssh/id_ed25519",
@@ -45,6 +45,12 @@ sealed interface CloneSetupEffect {
 class CloneSetupViewModel(
     private val cloneRepository: GitCloneRepository
 ) : ViewModel() {
+    private var useEnglish: Boolean = java.util.Locale.getDefault().language != "ja"
+
+    fun setUseEnglish(enabled: Boolean) {
+        useEnglish = enabled
+    }
+
 
     private val _uiState = MutableStateFlow(CloneSetupUiState())
     val uiState: StateFlow<CloneSetupUiState> = _uiState.asStateFlow()
@@ -143,10 +149,18 @@ class CloneSetupViewModel(
         if (cloneJob?.isActive == true || _uiState.value.isCloning) return
 
         val state = _uiState.value
-        val nameErr = if (state.gitUserName.trim().isEmpty()) "ユーザー名を入力してください" else null
-        val emailErr = if (!isValidEmail(state.gitUserEmail.trim())) "有効なメールアドレスを入力してください" else null
-        val urlErr = if (!isValidRepoUrl(state.repositoryUrl.trim())) "HTTPS または SSH のリポジトリURLを入力してください" else null
-        val dirErr = if (state.targetParentDir.trim().isEmpty()) "保存先フォルダを指定してください" else null
+        val nameErr = if (state.gitUserName.trim().isEmpty()) {
+            if (useEnglish) "Please enter a user name" else "ユーザー名を入力してください"
+        } else null
+        val emailErr = if (!isValidEmail(state.gitUserEmail.trim())) {
+            if (useEnglish) "Please enter a valid email address" else "有効なメールアドレスを入力してください"
+        } else null
+        val urlErr = if (!isValidRepoUrl(state.repositoryUrl.trim())) {
+            if (useEnglish) "Please enter an HTTPS or SSH repository URL" else "HTTPS または SSH のリポジトリURLを入力してください"
+        } else null
+        val dirErr = if (state.targetParentDir.trim().isEmpty()) {
+            if (useEnglish) "Please specify a save folder" else "保存先フォルダを指定してください"
+        } else null
 
         if (nameErr != null || emailErr != null || urlErr != null || dirErr != null) {
             _uiState.update {
@@ -166,7 +180,7 @@ class CloneSetupViewModel(
                 it.copy(
                     isCloning = true,
                     isCancelling = false,
-                    progressMessage = "準備中...",
+                    progressMessage = if (useEnglish) "Preparing..." else "準備中...",
                     generalError = null,
                     pendingOverwriteTargetPath = null
                 )
@@ -187,7 +201,8 @@ class CloneSetupViewModel(
                         if (generation == currentGenerationId) {
                             _uiState.update { it.copy(progressMessage = phase) }
                         }
-                    }
+                    },
+                    useEnglish = useEnglish
                 )
 
                 if (generation != currentGenerationId) return@launch
@@ -216,7 +231,7 @@ class CloneSetupViewModel(
                                     isCloning = false,
                                     isCancelling = false,
                                     progressMessage = "",
-                                    generalError = throwable.message ?: "Clone に失敗しました。"
+                                    generalError = throwable.message ?: if (useEnglish) "Clone failed." else "Clone に失敗しました。"
                                 )
                             }
                         }
@@ -229,7 +244,7 @@ class CloneSetupViewModel(
                             isCloning = false,
                             isCancelling = false,
                             progressMessage = "",
-                            generalError = "Clone をキャンセルしました。"
+                            generalError = if (useEnglish) "Clone cancelled." else "Clone をキャンセルしました。"
                         )
                     }
                 }
@@ -241,7 +256,7 @@ class CloneSetupViewModel(
         if (cloneJob?.isActive != true) return
         currentGenerationId++
         _uiState.update {
-            it.copy(isCancelling = true, progressMessage = "停止処理中...")
+            it.copy(isCancelling = true, progressMessage = if (useEnglish) "Stopping..." else "停止処理中...")
         }
         cloneJob?.cancel()
     }
@@ -257,3 +272,4 @@ class CloneSetupViewModel(
             url.startsWith("ssh://")
     }
 }
+
